@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Space Grotesk', sans-serif;
+  
+  /* Colores del Diseño original de las imágenes */
+  --color-navy: #1b2342;
+  --color-navy-dark: #12172d;
+  --color-sky: #cfebfe;
+  --color-body-light: #f4f6fa;
+  --color-accent: #2563eb;
+}
+
+body {
+  background-color: var(--color-body-light);
+  color: #1e293b;
+  font-family: 'Space Grotesk', sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom styles matching the screenshot */
+.btn-outline-navy {
+  border: 1px solid var(--color-navy);
+  color: var(--color-navy);
+  background-color: transparent;
+  transition: all 0.2s ease;
+}
+.btn-outline-navy:hover {
+  background-color: rgba(27, 35, 66, 0.05);
+}
+
+.btn-navy {
+  background-color: var(--color-navy);
+  color: white;
+  transition: all 0.2s ease;
+}
+.btn-navy:hover {
+  opacity: 0.9;
+}
+
+/* Custom Input Fields for Admin and Seller panels */
+.input-field {
+  width: 100%;
+  background-color: #182032;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0.75rem; /* 12px */
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem; /* 14px */
+  color: #f1f5f9;
+  outline: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.input-field::placeholder {
+  color: #64748b; /* slate-500 */
+}
+.input-field:focus {
+  border-color: #CDD8E8;
+  box-shadow: 0 0 0 1px rgba(205, 216, 232, 0.25);
+  background-color: #1c253b;
+}
+
+/* Adjust select option styles */
+select.input-field option {
+  background-color: #182032;
+  color: #f1f5f9;
+}
