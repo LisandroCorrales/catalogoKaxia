@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 export default function ProductsTab({
   products = [],
@@ -9,6 +9,11 @@ export default function ProductsTab({
   onDeleteProduct,
   isAdmin = false
 }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterStock, setFilterStock] = useState("");
+  const [filterTag, setFilterTag] = useState("");
+
   const btnStyles = isAdmin
     ? "bg-slate-700 text-white hover:bg-slate-650 shadow-black/10"
     : "bg-[#CDD8E8] text-[#0d1222] hover:bg-[#b9c9df] shadow-[#CDD8E8]/10";
@@ -20,6 +25,18 @@ export default function ProductsTab({
   const tableContainerBg = isAdmin
     ? "bg-[#0f131c]/35"
     : "bg-[#182032]/35";
+
+  const inputBg = isAdmin
+    ? "bg-black/40 border-white/10 text-slate-100 placeholder-slate-500 focus:border-slate-500 focus:ring-slate-500/10"
+    : "bg-[#0d1222] border-white/10 text-slate-200 placeholder-[#CDD8E8]/35 focus:border-[#CDD8E8] focus:ring-[#CDD8E8]/10";
+
+  const filteredProducts = products.filter(prod => {
+    const matchesSearch = prod.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = !filterCategory || prod.categoryId == filterCategory;
+    const matchesStock = !filterStock || prod.stock === filterStock;
+    const matchesTag = !filterTag || (filterTag === "none" ? (!prod.tags || prod.tags.length === 0) : (prod.tags && prod.tags.some(tId => tId == filterTag)));
+    return matchesSearch && matchesCategory && matchesStock && matchesTag;
+  });
 
   return (
     <div className="space-y-6">
@@ -36,6 +53,62 @@ export default function ProductsTab({
         </button>
       </div>
 
+      {/* Barra de Filtros */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-white/[0.02] border border-white/5 p-4 rounded-2xl select-none">
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Buscar por nombre</label>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Ej: Remera Kaxia..."
+            className={`w-full border rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-1 ${inputBg}`}
+          />
+        </div>
+
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Categoría</label>
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className={`w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 ${inputBg}`}
+          >
+            <option value="" className="bg-[#12172d] text-slate-200">Todas las categorías</option>
+            {categories.map(c => (
+              <option key={c.id} value={c.id} className="bg-[#12172d] text-slate-200">{c.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Disponibilidad</label>
+          <select
+            value={filterStock}
+            onChange={(e) => setFilterStock(e.target.value)}
+            className={`w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 ${inputBg}`}
+          >
+            <option value="" className="bg-[#12172d] text-slate-200">Todos los estados</option>
+            <option value="Disponible" className="bg-[#12172d] text-slate-200">Disponible</option>
+            <option value="Sin Stock" className="bg-[#12172d] text-slate-200">Sin Stock</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Etiqueta destacada</label>
+          <select
+            value={filterTag}
+            onChange={(e) => setFilterTag(e.target.value)}
+            className={`w-full border rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 ${inputBg}`}
+          >
+            <option value="" className="bg-[#12172d] text-slate-200">Todas las etiquetas</option>
+            <option value="none" className="bg-[#12172d] text-slate-200">Sin etiquetas</option>
+            {tags.map(t => (
+              <option key={t.id} value={t.id} className="bg-[#12172d] text-slate-200">{t.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <div className={`overflow-x-auto rounded-xl border border-white/5 ${tableContainerBg}`}>
         <table className="w-full text-left border-collapse text-xs md:text-sm">
           <thead>
@@ -49,14 +122,14 @@ export default function ProductsTab({
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
-            {products.length === 0 ? (
+            {filteredProducts.length === 0 ? (
               <tr>
                 <td colSpan="6" className="p-8 text-center text-slate-500 italic">
-                  No hay productos registrados.
+                  No se encontraron productos con los filtros seleccionados.
                 </td>
               </tr>
             ) : (
-              products.map(prod => (
+              filteredProducts.map(prod => (
                 <tr key={prod.id} className="hover:bg-white/[0.02] transition-colors">
                   <td className="p-4">
                     <img
@@ -67,21 +140,30 @@ export default function ProductsTab({
                   </td>
                   <td className="p-4 font-bold text-slate-200">
                     <div>{prod.name}</div>
-                    {prod.tagId && (
-                      <span
-                        className="inline-block text-[9px] font-extrabold px-1.5 py-0.5 rounded-full mt-1 text-white border"
-                        style={{
-                          backgroundColor: tags.find(t => t.id === prod.tagId)?.color + "25",
-                          borderColor: tags.find(t => t.id === prod.tagId)?.color + "60",
-                          color: tags.find(t => t.id === prod.tagId)?.color
-                        }}
-                      >
-                        {tags.find(t => t.id === prod.tagId)?.name}
-                      </span>
+                    {prod.tags && prod.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {prod.tags.map(tId => {
+                          const t = tags.find(tag => tag.id == tId);
+                          if (!t) return null;
+                          return (
+                            <span
+                              key={tId}
+                              className="inline-block text-[9px] font-extrabold px-1.5 py-0.5 rounded-full text-white border"
+                              style={{
+                                backgroundColor: t.color + "25",
+                                borderColor: t.color + "60",
+                                color: t.color
+                              }}
+                            >
+                              {t.name}
+                            </span>
+                          );
+                        })}
+                      </div>
                     )}
                   </td>
                   <td className="p-4 text-slate-400 font-medium">
-                    {categories.find(c => c.id === prod.categoryId)?.name || "Ninguna"}
+                    {categories.find(c => c.id == prod.categoryId)?.name || "Ninguna"}
                   </td>
                   <td className="p-4 text-slate-300 font-bold font-mono">
                     ${prod.price.toLocaleString("es-AR")}

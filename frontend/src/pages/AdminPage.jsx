@@ -11,6 +11,8 @@ import {
   analyticsService
 } from "../services/api.js";
 import ProductForm from "../components/ProductForm.jsx";
+import ConfirmationModal from "../components/ConfirmationModal.jsx";
+import ToastNotification from "../components/ToastNotification.jsx";
 import logoImg from "../assets/logo.png";
 
 // Importación de subcomponentes modulares del dashboard
@@ -23,9 +25,47 @@ import StatsTab from "../components/dashboard/StatsTab.jsx";
 import UsersTab from "../components/dashboard/UsersTab.jsx";
 import AuditLogsTab from "../components/dashboard/AuditLogsTab.jsx";
 
+// Componente helper para no duplicar los botones del Sidebar de Admin
+function SidebarContent({ activeTab, setActiveTab }) {
+  const tabs = [
+    { id: "products", name: "Productos", icon: "👕" },
+    { id: "categories", name: "Categorías", icon: "📁" },
+    { id: "tags", name: "Etiquetas", icon: "🏷️" },
+    { id: "colors", name: "Colores Globales", icon: "🎨" },
+    { id: "settings", name: "Barra de Anuncios", icon: "📢" },
+    { id: "metrics", name: "Estadísticas", icon: "📊" },
+    { id: "users", name: "Usuarios", icon: "👥" },
+    { id: "logs", name: "Auditoría", icon: "📋" }
+  ];
+
+  return (
+    <>
+      {tabs.map(tab => (
+        <button
+          key={tab.id}
+          onClick={() => setActiveTab(tab.id)}
+          className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer border-0 ${
+            activeTab === tab.id 
+              ? "bg-slate-700 text-white font-extrabold shadow-lg shadow-black/25 border border-white/5" 
+              : "bg-transparent text-slate-400 hover:bg-white/5 hover:text-slate-100"
+          }`}
+        >
+          <span>{tab.icon}</span> <span>{tab.name}</span>
+        </button>
+      ))}
+    </>
+  );
+}
+
 export default function AdminPage({ onLogout, onNavigateToCatalog, currentUser }) {
   const [activeTab, setActiveTab] = useState("products");
   const [loading, setLoading] = useState(true);
+
+  // Control responsivo de menú lateral
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Control de eliminación custom modal
+  const [deleteTarget, setDeleteTarget] = useState(null); // { type, id, title, message }
 
   // Estados de datos principales
   const [products, setProducts] = useState([]);
@@ -113,83 +153,90 @@ export default function AdminPage({ onLogout, onNavigateToCatalog, currentUser }
     }
   };
 
-  const handleDeleteProduct = async (id) => {
-    if (!window.confirm("¿Seguro que deseas eliminar este producto?")) return;
-    try {
-      await productService.delete(id);
-      showToast("Producto eliminado con éxito.");
-      loadAllData();
-    } catch (err) {
-      showToast("Error al eliminar.", "error");
-    }
+  const handleDeleteProduct = (id) => {
+    setDeleteTarget({
+      type: "product",
+      id,
+      title: "Eliminar Producto",
+      message: "¿Seguro que deseas eliminar este producto? Esta acción no se puede deshacer."
+    });
   };
 
   // --- CRUD CATEGORÍAS ---
-  const handleSaveCategory = async (name, description) => {
+  const handleSaveCategory = async (name, description, id = null) => {
     try {
       const slug = name.toLowerCase().replace(/ /g, "-");
-      await categoryService.create({ name, description, slug });
-      showToast("Categoría agregada con éxito.");
+      if (id) {
+        await categoryService.update(id, { name, description, slug });
+        showToast("Categoría actualizada con éxito.");
+      } else {
+        await categoryService.create({ name, description, slug });
+        showToast("Categoría agregada con éxito.");
+      }
       loadAllData();
     } catch (err) {
       showToast("Error al guardar.", "error");
     }
   };
 
-  const handleDeleteCategory = async (id) => {
-    if (!window.confirm("¿Deseas eliminar esta categoría?")) return;
-    try {
-      await categoryService.delete(id);
-      showToast("Categoría eliminada.");
-      loadAllData();
-    } catch (err) {
-      showToast(err.message || "Error al eliminar.", "error");
-    }
+  const handleDeleteCategory = (id) => {
+    setDeleteTarget({
+      type: "category",
+      id,
+      title: "Eliminar Categoría",
+      message: "¿Seguro que deseas eliminar esta categoría? Esto podría afectar a las prendas asociadas."
+    });
   };
 
   // --- CRUD ETIQUETAS (TAGS) ---
-  const handleSaveTag = async (name, color) => {
+  const handleSaveTag = async (name, color, id = null) => {
     try {
       const slug = name.toLowerCase().replace(/ /g, "-");
-      await tagService.create({ name, color, slug });
-      showToast("Etiqueta creada con éxito.");
+      if (id) {
+        await tagService.update(id, { name, color, slug });
+        showToast("Etiqueta actualizada con éxito.");
+      } else {
+        await tagService.create({ name, color, slug });
+        showToast("Etiqueta creada con éxito.");
+      }
       loadAllData();
     } catch (err) {
-      showToast("Error al crear etiqueta.", "error");
+      showToast("Error al guardar etiqueta.", "error");
     }
   };
 
-  const handleDeleteTag = async (id) => {
-    if (!window.confirm("¿Eliminar etiqueta?")) return;
-    try {
-      await tagService.delete(id);
-      showToast("Etiqueta eliminada.");
-      loadAllData();
-    } catch (err) {
-      showToast("Error al eliminar.", "error");
-    }
+  const handleDeleteTag = (id) => {
+    setDeleteTarget({
+      type: "tag",
+      id,
+      title: "Eliminar Etiqueta",
+      message: "¿Seguro que deseas eliminar esta etiqueta?"
+    });
   };
 
   // --- CRUD COLORES ---
-  const handleSaveColor = async (name, hexCode) => {
+  const handleSaveColor = async (name, hexCode, id = null) => {
     try {
-      await colorService.create({ name, hexCode });
-      showToast("Color global agregado.");
+      if (id) {
+        await colorService.update(id, { name, hexCode });
+        showToast("Color actualizado con éxito.");
+      } else {
+        await colorService.create({ name, hexCode });
+        showToast("Color global agregado.");
+      }
       loadAllData();
     } catch (err) {
-      showToast("Error al agregar color.", "error");
+      showToast("Error al guardar color.", "error");
     }
   };
 
-  const handleDeleteColor = async (id) => {
-    if (!window.confirm("¿Eliminar color global?")) return;
-    try {
-      await colorService.delete(id);
-      showToast("Color eliminado.");
-      loadAllData();
-    } catch (err) {
-      showToast("Error al eliminar.", "error");
-    }
+  const handleDeleteColor = (id) => {
+    setDeleteTarget({
+      type: "color",
+      id,
+      title: "Eliminar Color",
+      message: "¿Seguro que deseas eliminar este color global?"
+    });
   };
 
   // --- CRUD ACCESOS DE USUARIOS ---
@@ -203,65 +250,103 @@ export default function AdminPage({ onLogout, onNavigateToCatalog, currentUser }
     }
   };
 
-  const handleResetPassword = async (id) => {
-    if (!window.confirm("¿Seguro que deseas blanquear la contraseña de este usuario a '123456'?")) return;
+  const handleUpdatePasswordSubmit = (id, newPassword) => {
+    setDeleteTarget({
+      type: "changePassword",
+      id,
+      extraData: { newPassword },
+      title: "Confirmar Cambio de Contraseña",
+      message: "¿Seguro que deseas cambiar la contraseña de este usuario? Deberá iniciar sesión con su nueva contraseña.",
+      confirmText: "Confirmar"
+    });
+  };
+
+  const handleDeleteUser = (id) => {
+    setDeleteTarget({
+      type: "user",
+      id,
+      title: "Suspender Usuario",
+      message: "¿Seguro que deseas dar de baja esta cuenta de usuario? Se desactivará su acceso pero podrás reactivarla cuando quieras.",
+      confirmText: "Confirmar"
+    });
+  };
+
+  const handleRestoreUser = async (id) => {
     try {
-      await userService.updatePassword(id, "123456");
-      showToast("Contraseña blanqueada a '123456'.");
+      await userService.restore(id);
+      showToast("Usuario reactivado con éxito.");
       loadAllData();
     } catch (err) {
-      showToast("Error al blanquear contraseña.", "error");
+      showToast("Error al reactivar usuario.", "error");
     }
   };
 
-  const handleUpdatePasswordSubmit = async (id, newPassword) => {
+  // --- CONFIRMAR ELIMINADO / ACCIONES ---
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    const { type, id } = deleteTarget;
     try {
-      await userService.updatePassword(id, newPassword);
-      showToast("Contraseña cambiada con éxito.");
+      if (type === "product") {
+        await productService.delete(id);
+        showToast("Producto eliminado con éxito.");
+      } else if (type === "category") {
+        await categoryService.delete(id);
+        showToast("Categoría eliminada con éxito.");
+      } else if (type === "tag") {
+        await tagService.delete(id);
+        showToast("Etiqueta eliminada.");
+      } else if (type === "color") {
+        await colorService.delete(id);
+        showToast("Color eliminado.");
+      } else if (type === "user") {
+        await userService.delete(id);
+        showToast("Usuario eliminado con éxito.");
+      } else if (type === "changePassword") {
+        const { newPassword } = deleteTarget.extraData;
+        await userService.updatePassword(id, newPassword);
+        showToast("Contraseña cambiada con éxito.");
+      }
+      setDeleteTarget(null);
       loadAllData();
     } catch (err) {
-      showToast("Error al actualizar contraseña.", "error");
-    }
-  };
-
-  const handleDeleteUser = async (id) => {
-    if (!window.confirm("¿Seguro que deseas eliminar esta cuenta de usuario?")) return;
-    try {
-      await userService.delete(id);
-      showToast("Usuario eliminado con éxito.");
-      loadAllData();
-    } catch (err) {
-      showToast(err.message || "Error al eliminar usuario.", "error");
+      showToast(err.message || "Error al realizar acción.", "error");
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-[#04060a]">
-      {/* Toast Alert */}
-      {message.text && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none w-full max-w-md px-4">
-          <div className={`px-6 py-4 rounded-2xl border text-sm font-bold shadow-2xl backdrop-blur-md pointer-events-auto flex items-center gap-2.5 justify-center text-center animate-fade-in ${
-            message.type === "error" 
-              ? "bg-red-500/90 border-red-500/20 text-white shadow-red-500/10" 
-              : "bg-green-500/90 border-green-500/20 text-white shadow-green-500/10"
-          }`}>
-            <span>{message.type === "error" ? "🛑" : "✨"}</span>
-            <span>{message.text}</span>
-          </div>
-        </div>
-      )}
+      {/* Toast Notificación */}
+      <ToastNotification
+        text={message.text}
+        type={message.type}
+        onClose={() => setMessage({ text: "", type: "" })}
+      />
 
       {/* Header Fino */}
-      <header className="bg-[#07090e] border-b border-white/5 py-4 px-6 md:px-8 flex items-center justify-between shadow-md">
+      <header className="bg-[#07090e] border-b border-white/5 py-4 px-6 md:px-8 flex items-center justify-between shadow-md select-none">
+        {/* Lado Izquierdo: Botón Hamburguesa y Logotipo alineados a la izquierda */}
         <div className="flex items-center gap-3">
+          {/* Botón hamburguesa (mobile) */}
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="md:hidden text-slate-400 hover:text-white p-1 cursor-pointer border-0 bg-transparent flex items-center justify-center outline-none"
+            title="Abrir Menú"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
+
           <img src={logoImg} alt="KAXIA" className="h-8 object-contain" />
-          <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-          <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500">Panel Administrador</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-500 hidden sm:inline" />
+          <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500 hidden sm:inline">Panel Administrador</span>
         </div>
-        <div className="flex items-center gap-4">
+
+        {/* Lado Derecho (Escritorio únicamente, oculto en mobile) */}
+        <div className="hidden md:flex items-center gap-4">
           <button
             onClick={onNavigateToCatalog}
-            className="text-xs font-bold text-slate-400 hover:text-white hover:underline cursor-pointer border-0 bg-transparent"
+            className="text-xs font-bold border border-white/20 hover:bg-white/10 px-3 py-1.5 rounded-lg text-slate-200 transition-colors cursor-pointer block bg-transparent"
           >
             Ver Catálogo
           </button>
@@ -270,9 +355,9 @@ export default function AdminPage({ onLogout, onNavigateToCatalog, currentUser }
             <span className="text-xs font-medium text-slate-400">Hola, <span className="font-bold text-slate-200">{currentUser?.username}</span></span>
             <button
               onClick={handleLogout}
-              className="bg-slate-700 hover:bg-slate-650 text-white text-[10px] font-black uppercase tracking-wider py-1.5 px-3 rounded-lg cursor-pointer transition-colors border-0"
+              className="bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/20 text-[10px] font-black uppercase tracking-wider py-1.5 px-3.5 rounded-lg cursor-pointer transition-all active:scale-95"
             >
-              Salir
+              Cerrar Sesión
             </button>
           </div>
         </div>
@@ -280,73 +365,71 @@ export default function AdminPage({ onLogout, onNavigateToCatalog, currentUser }
 
       {/* Workspace */}
       <div className="flex-grow flex flex-col md:flex-row overflow-hidden">
-        {/* Sidebar */}
-        <aside className="w-full md:w-64 bg-[#07090e]/60 border-r border-white/5 p-5 flex flex-col gap-2 shrink-0">
-          <button
-            onClick={() => setActiveTab("products")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === "products" ? "bg-slate-750 text-white font-extrabold shadow-lg shadow-black/25 border border-white/5" : "text-slate-400 hover:bg-white/5 hover:text-slate-100"
-            }`}
-          >
-            👕 Productos
-          </button>
-          <button
-            onClick={() => setActiveTab("categories")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === "categories" ? "bg-slate-750 text-white font-extrabold shadow-lg shadow-black/25 border border-white/5" : "text-slate-400 hover:bg-white/5 hover:text-slate-100"
-            }`}
-          >
-            📁 Categorías
-          </button>
-          <button
-            onClick={() => setActiveTab("tags")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === "tags" ? "bg-slate-750 text-white font-extrabold shadow-lg shadow-black/25 border border-white/5" : "text-slate-400 hover:bg-white/5 hover:text-slate-100"
-            }`}
-          >
-            🏷️ Etiquetas
-          </button>
-          <button
-            onClick={() => setActiveTab("colors")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === "colors" ? "bg-slate-750 text-white font-extrabold shadow-lg shadow-black/25 border border-white/5" : "text-slate-400 hover:bg-white/5 hover:text-slate-100"
-            }`}
-          >
-            🎨 Colores Globales
-          </button>
-          <button
-            onClick={() => setActiveTab("settings")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === "settings" ? "bg-slate-750 text-white font-extrabold shadow-lg shadow-black/25 border border-white/5" : "text-slate-400 hover:bg-white/5 hover:text-slate-100"
-            }`}
-          >
-            📢 Barra de Anuncios
-          </button>
-          <button
-            onClick={() => setActiveTab("metrics")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === "metrics" ? "bg-slate-750 text-white font-extrabold shadow-lg shadow-black/25 border border-white/5" : "text-slate-400 hover:bg-white/5 hover:text-slate-100"
-            }`}
-          >
-            📊 Estadísticas
-          </button>
-          <button
-            onClick={() => setActiveTab("users")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === "users" ? "bg-slate-750 text-white font-extrabold shadow-lg shadow-black/25 border border-white/5" : "text-slate-400 hover:bg-white/5 hover:text-slate-100"
-            }`}
-          >
-            👥 Usuarios
-          </button>
-          <button
-            onClick={() => setActiveTab("logs")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === "logs" ? "bg-slate-750 text-white font-extrabold shadow-lg shadow-black/25 border border-white/5" : "text-slate-400 hover:bg-white/5 hover:text-slate-100"
-            }`}
-          >
-            📋 Auditoría
-          </button>
+        {/* Sidebar para Escritorio */}
+        <aside className="hidden md:flex w-64 bg-[#07090e]/60 border-r border-white/5 p-5 flex-col gap-2 shrink-0">
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} />
         </aside>
+
+        {/* Sidebar para Móvil (Drawer Overlay responsivo) */}
+        {isSidebarOpen && (
+          <div className="md:hidden fixed inset-0 z-50 flex">
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-black/80 backdrop-blur-xs transition-opacity" 
+              onClick={() => setIsSidebarOpen(false)}
+            />
+            
+            {/* Drawer */}
+            <aside className="relative w-64 max-w-[80vw] bg-[#07090e] border-r border-white/10 p-5 flex flex-col justify-between h-full z-10 animate-slide-right text-left">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-2 select-none">
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500">Navegación</span>
+                  <button
+                    onClick={() => setIsSidebarOpen(false)}
+                    className="text-slate-400 hover:text-white p-1 cursor-pointer border-0 bg-transparent outline-none"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <SidebarContent 
+                  activeTab={activeTab} 
+                  setActiveTab={(tab) => {
+                    setActiveTab(tab);
+                    setIsSidebarOpen(false);
+                  }} 
+                />
+              </div>
+
+              {/* Botones de acción integrados al Drawer en móviles */}
+              <div className="border-t border-white/5 pt-4 mt-auto space-y-4">
+                <div className="text-xs font-medium text-slate-400 select-none">
+                  Hola, <span className="font-bold text-slate-200">{currentUser?.username}</span>
+                </div>
+                <button
+                  onClick={() => {
+                    onNavigateToCatalog();
+                    setIsSidebarOpen(false);
+                  }}
+                  className="w-full text-center text-xs font-bold border border-white/20 hover:bg-white/10 px-3 py-2.5 rounded-lg text-slate-200 transition-colors cursor-pointer block bg-transparent"
+                >
+                  Ver Catálogo
+                </button>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsSidebarOpen(false);
+                  }}
+                  className="w-full text-center bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/20 text-xs font-black uppercase tracking-wider py-2.5 px-3.5 rounded-lg cursor-pointer transition-all active:scale-95 block"
+                >
+                  Cerrar Sesión
+                </button>
+              </div>
+            </aside>
+          </div>
+        )}
 
         {/* Tab Content Panels */}
         <main className="flex-grow p-6 md:p-8 overflow-y-auto">
@@ -414,8 +497,8 @@ export default function AdminPage({ onLogout, onNavigateToCatalog, currentUser }
                   currentUser={currentUser}
                   onCreateUser={handleCreateUser}
                   onUpdatePassword={handleUpdatePasswordSubmit}
-                  onResetPassword={handleResetPassword}
                   onDeleteUser={handleDeleteUser}
+                  onRestoreUser={handleRestoreUser}
                 />
               )}
               {activeTab === "logs" && (
@@ -437,6 +520,16 @@ export default function AdminPage({ onLogout, onNavigateToCatalog, currentUser }
         tags={tags}
         onSave={handleSaveProduct}
         onClose={() => setIsProductFormOpen(false)}
+      />
+
+      {/* Modal de Confirmación de Eliminado */}
+      <ConfirmationModal
+        isOpen={!!deleteTarget}
+        title={deleteTarget?.title || ""}
+        message={deleteTarget?.message || ""}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+        confirmText={deleteTarget?.confirmText || "Eliminar"}
       />
     </div>
   );

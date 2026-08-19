@@ -7,6 +7,7 @@ export default function CategoriesTab({
   isAdmin = false
 }) {
   const [newCategory, setNewCategory] = useState({ name: "", description: "" });
+  const [editingId, setEditingId] = useState(null);
 
   const labelStyles = isAdmin
     ? "text-slate-400"
@@ -31,7 +32,18 @@ export default function CategoriesTab({
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!newCategory.name.trim()) return;
-    onSaveCategory(newCategory.name.trim(), newCategory.description.trim());
+    onSaveCategory(newCategory.name.trim(), newCategory.description.trim(), editingId);
+    setNewCategory({ name: "", description: "" });
+    setEditingId(null);
+  };
+
+  const handleEditClick = (cat) => {
+    setEditingId(cat.id);
+    setNewCategory({ name: cat.name, description: cat.description || "" });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
     setNewCategory({ name: "", description: "" });
   };
 
@@ -45,7 +57,9 @@ export default function CategoriesTab({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Formulario */}
         <div className={`${cardBg} border border-white/5 p-5 rounded-2xl h-fit`}>
-          <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider">Nueva Categoría</h3>
+          <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider">
+            {editingId ? "Editar Categoría" : "Nueva Categoría"}
+          </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className={`block text-[10px] font-bold uppercase tracking-wider ${labelStyles} mb-2`}>Nombre</label>
@@ -68,12 +82,23 @@ export default function CategoriesTab({
                 rows="3"
               />
             </div>
-            <button
-              type="submit"
-              className={`w-full ${btnStyles} py-3 text-xs rounded-xl font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-95 shadow-md cursor-pointer border-0`}
-            >
-              Agregar Categoría
-            </button>
+            <div className="flex gap-2">
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="w-1/2 bg-white/5 hover:bg-white/10 text-slate-300 py-3 text-xs rounded-xl font-bold uppercase tracking-widest cursor-pointer border-0 transition-colors"
+                >
+                  Cancelar
+                </button>
+              )}
+              <button
+                type="submit"
+                className={`${editingId ? 'w-1/2' : 'w-full'} ${btnStyles} py-3 text-xs rounded-xl font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-95 shadow-md cursor-pointer border-0`}
+              >
+                {editingId ? "Guardar" : "Agregar Categoría"}
+              </button>
+            </div>
           </form>
         </div>
 
@@ -91,12 +116,20 @@ export default function CategoriesTab({
                   <p className="text-xs text-slate-400 mt-1">{cat.description || "Sin descripción."}</p>
                   <span className="inline-block text-[9px] font-mono text-slate-500 mt-1">Slug: {cat.slug}</span>
                 </div>
-                <button
-                  onClick={() => onDeleteCategory(cat.id)}
-                  className="text-xs font-bold text-red-400 hover:text-red-300 transition-colors cursor-pointer border-0 bg-transparent"
-                >
-                  Eliminar
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleEditClick(cat)}
+                    className="text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors cursor-pointer border-0 bg-transparent"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => onDeleteCategory(cat.id)}
+                    className="text-xs font-bold text-red-400 hover:text-red-300 transition-colors cursor-pointer border-0 bg-transparent"
+                  >
+                    Eliminar
+                  </button>
+                </div>
               </div>
             ))
           )}

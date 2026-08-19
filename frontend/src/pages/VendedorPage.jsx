@@ -9,6 +9,8 @@ import {
   analyticsService
 } from "../services/api.js";
 import ProductForm from "../components/ProductForm.jsx";
+import ConfirmationModal from "../components/ConfirmationModal.jsx";
+import ToastNotification from "../components/ToastNotification.jsx";
 import logoImg from "../assets/logo.png";
 
 // Importación de subcomponentes modulares del dashboard
@@ -19,9 +21,45 @@ import ColorsTab from "../components/dashboard/ColorsTab.jsx";
 import AnnouncementsTab from "../components/dashboard/AnnouncementsTab.jsx";
 import StatsTab from "../components/dashboard/StatsTab.jsx";
 
+// Componente helper para no duplicar los botones del Sidebar
+function SidebarContent({ activeTab, setActiveTab }) {
+  const tabs = [
+    { id: "products", name: "Productos", icon: "👕" },
+    { id: "categories", name: "Categorías", icon: "📁" },
+    { id: "tags", name: "Etiquetas", icon: "🏷️" },
+    { id: "colors", name: "Colores Globales", icon: "🎨" },
+    { id: "settings", name: "Barra de Anuncios", icon: "📢" },
+    { id: "metrics", name: "Estadísticas", icon: "📊" }
+  ];
+
+  return (
+    <>
+      {tabs.map(tab => (
+        <button
+          key={tab.id}
+          onClick={() => setActiveTab(tab.id)}
+          className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer border-0 ${
+            activeTab === tab.id 
+              ? "bg-[#CDD8E8] text-[#0d1222] font-extrabold shadow-md shadow-[#CDD8E8]/10" 
+              : "bg-transparent text-slate-400 hover:bg-[#CDD8E8]/5 hover:text-slate-100"
+          }`}
+        >
+          <span>{tab.icon}</span> <span>{tab.name}</span>
+        </button>
+      ))}
+    </>
+  );
+}
+
 export default function VendedorPage({ onLogout, onNavigateToCatalog, currentUser }) {
   const [activeTab, setActiveTab] = useState("products");
   const [loading, setLoading] = useState(true);
+
+  // Control responsivo de menú lateral
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Control de eliminación custom modal
+  const [deleteTarget, setDeleteTarget] = useState(null); // { type, id, title, message }
 
   // Estados de datos principales
   const [products, setProducts] = useState([]);
@@ -103,107 +141,151 @@ export default function VendedorPage({ onLogout, onNavigateToCatalog, currentUse
     }
   };
 
-  const handleDeleteProduct = async (id) => {
-    if (!window.confirm("¿Seguro que deseas eliminar este producto?")) return;
-    try {
-      await productService.delete(id);
-      showToast("Producto eliminado con éxito.");
-      loadAllData();
-    } catch (err) {
-      showToast("Error al eliminar.", "error");
-    }
+  const handleDeleteProduct = (id) => {
+    setDeleteTarget({
+      type: "product",
+      id,
+      title: "Eliminar Producto",
+      message: "¿Seguro que deseas eliminar este producto? Esta acción no se puede deshacer."
+    });
   };
 
   // --- CRUD CATEGORÍAS ---
-  const handleSaveCategory = async (name, description) => {
+  const handleSaveCategory = async (name, description, id = null) => {
     try {
       const slug = name.toLowerCase().replace(/ /g, "-");
-      await categoryService.create({ name, description, slug });
-      showToast("Categoría agregada con éxito.");
+      if (id) {
+        await categoryService.update(id, { name, description, slug });
+        showToast("Categoría actualizada con éxito.");
+      } else {
+        await categoryService.create({ name, description, slug });
+        showToast("Categoría agregada con éxito.");
+      }
       loadAllData();
     } catch (err) {
       showToast("Error al guardar.", "error");
     }
   };
 
-  const handleDeleteCategory = async (id) => {
-    if (!window.confirm("¿Deseas eliminar esta categoría?")) return;
+  const handleDeleteCategory = (id) => {
+    setDeleteTarget({
+      type: "category",
+      id,
+      title: "Eliminar Categoría",
+      message: "¿Seguro que deseas eliminar esta categoría? Esto podría afectar a las prendas asociadas."
+    });
+  };
+
+  // --- CRUD ETIQUETAS (TAGS) ---
+  const handleSaveTag = async (name, color, id = null) => {
     try {
-      await categoryService.delete(id);
-      showToast("Categoría eliminada.");
+      const slug = name.toLowerCase().replace(/ /g, "-");
+      if (id) {
+        await tagService.update(id, { name, color, slug });
+        showToast("Etiqueta actualizada con éxito.");
+      } else {
+        await tagService.create({ name, color, slug });
+        showToast("Etiqueta creada con éxito.");
+      }
+      loadAllData();
+    } catch (err) {
+      showToast("Error al guardar etiqueta.", "error");
+    }
+  };
+
+  const handleDeleteTag = (id) => {
+    setDeleteTarget({
+      type: "tag",
+      id,
+      title: "Eliminar Etiqueta",
+      message: "¿Seguro que deseas eliminar esta etiqueta?"
+    });
+  };
+
+  // --- CRUD COLORES ---
+  const handleSaveColor = async (name, hexCode, id = null) => {
+    try {
+      if (id) {
+        await colorService.update(id, { name, hexCode });
+        showToast("Color actualizado con éxito.");
+      } else {
+        await colorService.create({ name, hexCode });
+        showToast("Color global agregado.");
+      }
+      loadAllData();
+    } catch (err) {
+      showToast("Error al guardar color.", "error");
+    }
+  };
+
+  const handleDeleteColor = (id) => {
+    setDeleteTarget({
+      type: "color",
+      id,
+      title: "Eliminar Color",
+      message: "¿Seguro que deseas eliminar este color global?"
+    });
+  };
+
+  // --- CONFIRMAR ELIMINADO ---
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    const { type, id } = deleteTarget;
+    try {
+      if (type === "product") {
+        await productService.delete(id);
+        showToast("Producto eliminado con éxito.");
+      } else if (type === "category") {
+        await categoryService.delete(id);
+        showToast("Categoría eliminada con éxito.");
+      } else if (type === "tag") {
+        await tagService.delete(id);
+        showToast("Etiqueta eliminada.");
+      } else if (type === "color") {
+        await colorService.delete(id);
+        showToast("Color eliminado.");
+      }
+      setDeleteTarget(null);
       loadAllData();
     } catch (err) {
       showToast(err.message || "Error al eliminar.", "error");
     }
   };
 
-  // --- CRUD ETIQUETAS (TAGS) ---
-  const handleSaveTag = async (name, color) => {
-    try {
-      const slug = name.toLowerCase().replace(/ /g, "-");
-      await tagService.create({ name, color, slug });
-      showToast("Etiqueta creada con éxito.");
-      loadAllData();
-    } catch (err) {
-      showToast("Error al crear etiqueta.", "error");
-    }
-  };
-
-  const handleDeleteTag = async (id) => {
-    if (!window.confirm("¿Eliminar etiqueta?")) return;
-    try {
-      await tagService.delete(id);
-      showToast("Etiqueta eliminada.");
-      loadAllData();
-    } catch (err) {
-      showToast("Error al eliminar.", "error");
-    }
-  };
-
-  // --- CRUD COLORES ---
-  const handleSaveColor = async (name, hexCode) => {
-    try {
-      await colorService.create({ name, hexCode });
-      showToast("Color global agregado.");
-      loadAllData();
-    } catch (err) {
-      showToast("Error al agregar color.", "error");
-    }
-  };
-
-  const handleDeleteColor = async (id) => {
-    if (!window.confirm("¿Eliminar color global?")) return;
-    try {
-      await colorService.delete(id);
-      showToast("Color eliminado.");
-      loadAllData();
-    } catch (err) {
-      showToast("Error al eliminar.", "error");
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-[#0f1422]">
       {/* Toast Notificación */}
-      {message.text && (
-        <div className={`fixed top-5 right-5 z-55 px-5 py-3.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-lg transition-all duration-300 transform translate-y-0 ${
-          message.type === "error" ? "bg-red-500 text-white" : "bg-green-500 text-white"
-        }`}>
-          {message.text}
-        </div>
-      )}
+      <ToastNotification
+        text={message.text}
+        type={message.type}
+        onClose={() => setMessage({ text: "", type: "" })}
+      />
 
       {/* Header Fino */}
-      <header className="bg-[#07090e] border-b border-white/5 py-4 px-6 md:px-8 flex items-center justify-between shadow-md">
+      <header className="bg-[#07090e] border-b border-white/5 py-4 px-6 md:px-8 flex items-center justify-between shadow-md select-none">
+        {/* Lado Izquierdo: Botón Hamburguesa y Logotipo alineados a la izquierda */}
         <div className="flex items-center gap-3">
+          {/* Botón hamburguesa (mobile) */}
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="md:hidden text-slate-400 hover:text-white p-1 cursor-pointer border-0 bg-transparent flex items-center justify-center outline-none"
+            title="Abrir Menú"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
+
           <img src={logoImg} alt="KAXIA" className="h-8 object-contain" />
-          <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-          <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500">Panel Vendedor</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-500 hidden sm:inline" />
+          <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500 hidden sm:inline">Panel Vendedor</span>
         </div>
-        <div className="flex items-center gap-4">
+
+        {/* Lado Derecho (Escritorio únicamente, oculto en mobile) */}
+        <div className="hidden md:flex items-center gap-4">
           <button
             onClick={onNavigateToCatalog}
-            className="text-xs font-bold text-[#CDD8E8] hover:underline cursor-pointer border-0 bg-transparent"
+            className="text-xs font-bold border border-[#CDD8E8]/30 hover:bg-[#CDD8E8]/10 px-3 py-1.5 rounded-lg text-[#CDD8E8] transition-colors cursor-pointer block bg-transparent"
           >
             Ver Catálogo
           </button>
@@ -212,9 +294,9 @@ export default function VendedorPage({ onLogout, onNavigateToCatalog, currentUse
             <span className="text-xs font-medium text-slate-400">Hola, <span className="font-bold text-slate-200">{currentUser?.username}</span></span>
             <button
               onClick={handleLogout}
-              className="bg-[#CDD8E8]/10 hover:bg-[#CDD8E8]/20 text-[#CDD8E8] text-[10px] font-black uppercase tracking-wider py-1.5 px-3 rounded-lg cursor-pointer transition-colors border-0"
+              className="bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/20 text-[10px] font-black uppercase tracking-wider py-1.5 px-3.5 rounded-lg cursor-pointer transition-all active:scale-95"
             >
-              Salir
+              Cerrar Sesión
             </button>
           </div>
         </div>
@@ -222,57 +304,71 @@ export default function VendedorPage({ onLogout, onNavigateToCatalog, currentUse
 
       {/* Workspace */}
       <div className="flex-grow flex flex-col md:flex-row overflow-hidden">
-        {/* Sidebar */}
-        <aside className="w-full md:w-64 bg-[#07090e]/60 border-r border-white/5 p-5 flex flex-col gap-2 shrink-0">
-          <button
-            onClick={() => setActiveTab("products")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === "products" ? "bg-[#CDD8E8] text-[#0d1222] font-extrabold shadow-md shadow-[#CDD8E8]/10" : "text-slate-400 hover:bg-[#CDD8E8]/5 hover:text-slate-100"
-            }`}
-          >
-            👕 Productos
-          </button>
-          <button
-            onClick={() => setActiveTab("categories")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === "categories" ? "bg-[#CDD8E8] text-[#0d1222] font-extrabold shadow-md shadow-[#CDD8E8]/10" : "text-slate-400 hover:bg-[#CDD8E8]/5 hover:text-slate-100"
-            }`}
-          >
-            📁 Categorías
-          </button>
-          <button
-            onClick={() => setActiveTab("tags")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === "tags" ? "bg-[#CDD8E8] text-[#0d1222] font-extrabold shadow-md shadow-[#CDD8E8]/10" : "text-slate-400 hover:bg-[#CDD8E8]/5 hover:text-slate-100"
-            }`}
-          >
-            🏷️ Etiquetas
-          </button>
-          <button
-            onClick={() => setActiveTab("colors")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === "colors" ? "bg-[#CDD8E8] text-[#0d1222] font-extrabold shadow-md shadow-[#CDD8E8]/10" : "text-slate-400 hover:bg-[#CDD8E8]/5 hover:text-slate-100"
-            }`}
-          >
-            🎨 Colores Globales
-          </button>
-          <button
-            onClick={() => setActiveTab("settings")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === "settings" ? "bg-[#CDD8E8] text-[#0d1222] font-extrabold shadow-md shadow-[#CDD8E8]/10" : "text-slate-400 hover:bg-[#CDD8E8]/5 hover:text-slate-100"
-            }`}
-          >
-            📢 Barra de Anuncios
-          </button>
-          <button
-            onClick={() => setActiveTab("metrics")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === "metrics" ? "bg-[#CDD8E8] text-[#0d1222] font-extrabold shadow-md shadow-[#CDD8E8]/10" : "text-slate-400 hover:bg-[#CDD8E8]/5 hover:text-slate-100"
-            }`}
-          >
-            📊 Estadísticas
-          </button>
+        {/* Sidebar para Escritorio */}
+        <aside className="hidden md:flex w-64 bg-[#07090e]/60 border-r border-white/5 p-5 flex-col gap-2 shrink-0">
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} />
         </aside>
+
+        {/* Sidebar para Móvil (Drawer Overlay responsivo) */}
+        {isSidebarOpen && (
+          <div className="md:hidden fixed inset-0 z-50 flex">
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-black/80 backdrop-blur-xs transition-opacity" 
+              onClick={() => setIsSidebarOpen(false)}
+            />
+            
+            {/* Drawer */}
+            <aside className="relative w-64 max-w-[80vw] bg-[#07090e] border-r border-white/10 p-5 flex flex-col justify-between h-full z-10 animate-slide-right text-left">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-2 select-none">
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500">Navegación</span>
+                  <button
+                    onClick={() => setIsSidebarOpen(false)}
+                    className="text-slate-400 hover:text-white p-1 cursor-pointer border-0 bg-transparent outline-none"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <SidebarContent 
+                  activeTab={activeTab} 
+                  setActiveTab={(tab) => {
+                    setActiveTab(tab);
+                    setIsSidebarOpen(false);
+                  }} 
+                />
+              </div>
+
+              {/* Botones de acción integrados al Drawer en móviles */}
+              <div className="border-t border-white/5 pt-4 mt-auto space-y-4">
+                <div className="text-xs font-medium text-slate-400 select-none">
+                  Hola, <span className="font-bold text-slate-200">{currentUser?.username}</span>
+                </div>
+                <button
+                  onClick={() => {
+                    onNavigateToCatalog();
+                    setIsSidebarOpen(false);
+                  }}
+                  className="w-full text-center text-xs font-bold border border-[#CDD8E8]/30 hover:bg-[#CDD8E8]/10 px-3 py-2.5 rounded-lg text-[#CDD8E8] transition-colors cursor-pointer block bg-transparent"
+                >
+                  Ver Catálogo
+                </button>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsSidebarOpen(false);
+                  }}
+                  className="w-full text-center bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/20 text-xs font-black uppercase tracking-wider py-2.5 px-3.5 rounded-lg cursor-pointer transition-all active:scale-95 block"
+                >
+                  Cerrar Sesión
+                </button>
+              </div>
+            </aside>
+          </div>
+        )}
 
         {/* Tab Content Panels */}
         <main className="flex-grow p-6 md:p-8 overflow-y-auto">
@@ -348,6 +444,16 @@ export default function VendedorPage({ onLogout, onNavigateToCatalog, currentUse
         tags={tags}
         onSave={handleSaveProduct}
         onClose={() => setIsProductFormOpen(false)}
+      />
+
+      {/* Modal de Confirmación de Eliminado */}
+      <ConfirmationModal
+        isOpen={!!deleteTarget}
+        title={deleteTarget?.title || ""}
+        message={deleteTarget?.message || ""}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+        confirmText={deleteTarget?.confirmText || "Eliminar"}
       />
     </div>
   );

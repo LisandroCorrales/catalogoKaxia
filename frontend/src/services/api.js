@@ -202,7 +202,7 @@ export const authService = {
     await delay();
     const cleanUsername = username.trim().toLowerCase();
     const found = users.find(
-      (u) => u.username.toLowerCase() === cleanUsername && u.passwordHash === password
+      (u) => u.username.toLowerCase() === cleanUsername && u.passwordHash === password && !u.isDeleted
     );
     if (!found) {
       throw new Error("Credenciales inválidas. Revise usuario y contraseña.");
@@ -270,9 +270,20 @@ export const userService = {
       throw new Error("No puedes eliminar a tu propio usuario activo.");
     }
 
-    users = users.filter((u) => u.id !== id);
+    users[idx].isDeleted = true;
     setStorageItem("kaxia_users", users);
     writeAuditLog("DELETE", "User", id, { username: old.username });
+    return true;
+  },
+  restore: async (id) => {
+    await delay();
+    const idx = users.findIndex((u) => u.id === id);
+    if (idx === -1) throw new Error("Usuario no encontrado.");
+    const old = users[idx];
+
+    users[idx].isDeleted = false;
+    setStorageItem("kaxia_users", users);
+    writeAuditLog("RESTORE", "User", id, { username: old.username });
     return true;
   }
 };

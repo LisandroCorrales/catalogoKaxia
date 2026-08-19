@@ -7,6 +7,7 @@ export default function TagsTab({
   isAdmin = false
 }) {
   const [newTag, setNewTag] = useState({ name: "", color: "#3b82f6" });
+  const [editingId, setEditingId] = useState(null);
 
   const labelStyles = isAdmin
     ? "text-slate-400"
@@ -31,7 +32,18 @@ export default function TagsTab({
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!newTag.name.trim()) return;
-    onSaveTag(newTag.name.trim(), newTag.color);
+    onSaveTag(newTag.name.trim(), newTag.color, editingId);
+    setNewTag({ name: "", color: "#3b82f6" });
+    setEditingId(null);
+  };
+
+  const handleEditClick = (tag) => {
+    setEditingId(tag.id);
+    setNewTag({ name: tag.name, color: tag.color });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
     setNewTag({ name: "", color: "#3b82f6" });
   };
 
@@ -45,7 +57,9 @@ export default function TagsTab({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Formulario */}
         <div className={`${cardBg} border border-white/5 p-5 rounded-2xl h-fit`}>
-          <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider">Nueva Etiqueta</h3>
+          <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider">
+            {editingId ? "Editar Etiqueta" : "Nueva Etiqueta"}
+          </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className={`block text-[10px] font-bold uppercase tracking-wider ${labelStyles} mb-2`}>Nombre</label>
@@ -75,12 +89,23 @@ export default function TagsTab({
                 />
               </div>
             </div>
-            <button
-              type="submit"
-              className={`w-full ${btnStyles} py-3 text-xs rounded-xl font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-95 shadow-md cursor-pointer border-0`}
-            >
-              Crear Etiqueta
-            </button>
+            <div className="flex gap-2">
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="w-1/2 bg-white/5 hover:bg-white/10 text-slate-300 py-3 text-xs rounded-xl font-bold uppercase tracking-widest cursor-pointer border-0 transition-colors"
+                >
+                  Cancelar
+                </button>
+              )}
+              <button
+                type="submit"
+                className={`${editingId ? 'w-1/2' : 'w-full'} ${btnStyles} py-3 text-xs rounded-xl font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-95 shadow-md cursor-pointer border-0`}
+              >
+                {editingId ? "Guardar" : "Crear Etiqueta"}
+              </button>
+            </div>
           </form>
         </div>
 
@@ -94,18 +119,26 @@ export default function TagsTab({
             tags.map(tag => (
               <div key={tag.id} className={`p-4 rounded-xl border border-white/5 ${listItemBg} flex items-center justify-between gap-4`}>
                 <div className="flex items-center gap-3">
-                  <span className="w-3.5 h-3.5 rounded-full border border-white/10" style={{ backgroundColor: tag.color }} />
+                  <span className="w-3.5 h-3.5 rounded-full border border-white/10 shrink-0" style={{ backgroundColor: tag.color }} />
                   <div>
                     <h4 className="font-bold text-slate-200 text-sm">{tag.name}</h4>
                     <span className="text-[10px] font-mono text-slate-500">{tag.color}</span>
                   </div>
                 </div>
-                <button
-                  onClick={() => onDeleteTag(tag.id)}
-                  className="text-xs font-bold text-red-400 hover:text-red-300 transition-colors cursor-pointer border-0 bg-transparent"
-                >
-                  Eliminar
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleEditClick(tag)}
+                    className="text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors cursor-pointer border-0 bg-transparent"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => onDeleteTag(tag.id)}
+                    className="text-xs font-bold text-red-400 hover:text-red-300 transition-colors cursor-pointer border-0 bg-transparent"
+                  >
+                    Eliminar
+                  </button>
+                </div>
               </div>
             ))
           )}

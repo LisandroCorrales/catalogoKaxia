@@ -7,6 +7,7 @@ export default function ColorsTab({
   isAdmin = false
 }) {
   const [newColor, setNewColor] = useState({ name: "", hexCode: "#000000" });
+  const [editingId, setEditingId] = useState(null);
 
   const labelStyles = isAdmin
     ? "text-slate-400"
@@ -31,7 +32,18 @@ export default function ColorsTab({
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!newColor.name.trim()) return;
-    onSaveColor(newColor.name.trim(), newColor.hexCode);
+    onSaveColor(newColor.name.trim(), newColor.hexCode, editingId);
+    setNewColor({ name: "", hexCode: "#000000" });
+    setEditingId(null);
+  };
+
+  const handleEditClick = (color) => {
+    setEditingId(color.id);
+    setNewColor({ name: color.name, hexCode: color.hexCode });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
     setNewColor({ name: "", hexCode: "#000000" });
   };
 
@@ -45,7 +57,9 @@ export default function ColorsTab({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Formulario */}
         <div className={`${cardBg} border border-white/5 p-5 rounded-2xl h-fit`}>
-          <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider">Nuevo Color</h3>
+          <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider">
+            {editingId ? "Editar Color" : "Nuevo Color"}
+          </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className={`block text-[10px] font-bold uppercase tracking-wider ${labelStyles} mb-2`}>Nombre descriptivo</label>
@@ -75,12 +89,23 @@ export default function ColorsTab({
                 />
               </div>
             </div>
-            <button
-              type="submit"
-              className={`w-full ${btnStyles} py-3 text-xs rounded-xl font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-95 shadow-md cursor-pointer border-0`}
-            >
-              Agregar Color
-            </button>
+            <div className="flex gap-2">
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="w-1/2 bg-white/5 hover:bg-white/10 text-slate-300 py-3 text-xs rounded-xl font-bold uppercase tracking-widest cursor-pointer border-0 transition-colors"
+                >
+                  Cancelar
+                </button>
+              )}
+              <button
+                type="submit"
+                className={`${editingId ? 'w-1/2' : 'w-full'} ${btnStyles} py-3 text-xs rounded-xl font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-95 shadow-md cursor-pointer border-0`}
+              >
+                {editingId ? "Guardar" : "Agregar Color"}
+              </button>
+            </div>
           </form>
         </div>
 
@@ -92,7 +117,7 @@ export default function ColorsTab({
             </div>
           ) : (
             colors.map(color => (
-              <div key={color.id} className={`p-4 rounded-xl border border-white/5 ${listItemBg} flex items-center justify-between gap-3`}>
+              <div key={color.id} className={`p-4 rounded-xl border border-white/5 ${listItemBg} flex flex-col justify-between gap-3`}>
                 <div className="flex items-center gap-2.5">
                   <span className="w-5 h-5 rounded-full border border-white/10 shadow-sm shrink-0" style={{ backgroundColor: color.hexCode }} />
                   <div>
@@ -100,12 +125,20 @@ export default function ColorsTab({
                     <span className="text-[9px] font-mono text-slate-500 uppercase">{color.hexCode}</span>
                   </div>
                 </div>
-                <button
-                  onClick={() => onDeleteColor(color.id)}
-                  className="text-xs font-bold text-red-400 hover:text-red-300 transition-colors cursor-pointer border-0 bg-transparent"
-                >
-                  Eliminar
-                </button>
+                <div className="flex gap-3 mt-1.5 self-end">
+                  <button
+                    onClick={() => handleEditClick(color)}
+                    className="text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors cursor-pointer border-0 bg-transparent"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => onDeleteColor(color.id)}
+                    className="text-xs font-bold text-red-400 hover:text-red-300 transition-colors cursor-pointer border-0 bg-transparent"
+                  >
+                    Eliminar
+                  </button>
+                </div>
               </div>
             ))
           )}
