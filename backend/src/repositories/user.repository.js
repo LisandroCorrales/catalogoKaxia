@@ -8,7 +8,8 @@ export class UserRepository {
       id: doc._id.toString(),
       username: doc.username,
       passwordHash: doc.passwordHash,
-      role: doc.role
+      role: doc.role,
+      isDeleted: doc.isDeleted || false
     });
   }
 
@@ -17,7 +18,8 @@ export class UserRepository {
     return {
       username: entity.username,
       passwordHash: entity.passwordHash,
-      role: entity.role
+      role: entity.role,
+      isDeleted: entity.isDeleted || false
     };
   }
 
@@ -29,6 +31,11 @@ export class UserRepository {
   async findByUsername(username) {
     const doc = await UserModel.findOne({ username: username.toLowerCase() });
     return UserRepository.toDomain(doc);
+  }
+
+  async findAll() {
+    const docs = await UserModel.find({});
+    return docs.map(UserRepository.toDomain);
   }
 
   async create(userEntity) {
@@ -47,7 +54,12 @@ export class UserRepository {
   }
 
   async delete(id) {
-    await UserModel.findByIdAndDelete(id);
+    await UserModel.findByIdAndUpdate(id, { isDeleted: true });
+    return true;
+  }
+
+  async restore(id) {
+    await UserModel.findByIdAndUpdate(id, { isDeleted: false });
     return true;
   }
 }

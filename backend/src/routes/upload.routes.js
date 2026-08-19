@@ -36,4 +36,39 @@ router.post("/", authenticateToken, requireRole([Rol.ADMIN, Rol.VENDEDOR]), uplo
   }
 });
 
+const getPublicIdFromUrl = (url) => {
+  const parts = url.split("/");
+  const uploadIndex = parts.indexOf("upload");
+  if (uploadIndex === -1) return null;
+  let startIndex = uploadIndex + 1;
+  if (parts[startIndex] && parts[startIndex].startsWith("v")) {
+    startIndex += 1;
+  }
+  const publicIdWithExtension = parts.slice(startIndex).join("/");
+  const lastDotIndex = publicIdWithExtension.lastIndexOf(".");
+  if (lastDotIndex === -1) return publicIdWithExtension;
+  return publicIdWithExtension.substring(0, lastDotIndex);
+};
+
+router.delete("/", authenticateToken, requireRole([Rol.ADMIN, Rol.VENDEDOR]), async (req, res, next) => {
+  try {
+    const { url } = req.body;
+    if (!url) {
+      const error = new Error("URL de imagen requerida.");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const publicId = getPublicIdFromUrl(url);
+    if (!publicId) {
+      return res.status(400).json({ message: "No se pudo extraer el public_id de la URL provista." });
+    }
+
+    const result = await cloudinary.uploader.destroy(publicId);
+    res.status(200).json({ message: "Imagen eliminada de Cloudinary con éxito.", result });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export const uploadRouter = router;

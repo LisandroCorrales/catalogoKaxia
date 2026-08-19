@@ -54,7 +54,7 @@ export default function CatalogPage({ onNavigateToLogin, onNavigateToAdmin, curr
           categoryId: selectedCategory,
           tagId: selectedTag
         });
-        
+
         // Ordenar productos: disponibles primero, sin stock al final
         const sortedProds = [...prodsRes].sort((a, b) => {
           const aOut = a.stock === "Sin Stock";
@@ -263,6 +263,7 @@ export default function CatalogPage({ onNavigateToLogin, onNavigateToAdmin, curr
       <QuickAddModal
         product={quickAddProduct}
         colors={colors}
+        tags={tags}
         onClose={() => setQuickAddProduct(null)}
         onConfirm={handleConfirmQuickAdd}
       />

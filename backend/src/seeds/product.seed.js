@@ -33,7 +33,8 @@ const seedDatabase = async () => {
 
     console.log("\n2. Creando Usuario Administrador Inicial...");
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash("adminpassword123", salt);
+    const seedPassword = process.env.ADMIN_SEED_PASSWORD;
+    const hashedPassword = await bcrypt.hash(seedPassword, salt);
     
     const adminUser = await UserModel.create({
       username: "admin",
@@ -42,7 +43,7 @@ const seedDatabase = async () => {
     });
     console.log("✓ Usuario Administrador creado:");
     console.log(`   - Usuario: admin`);
-    console.log(`   - Clave: adminpassword123`);
+    console.log(`   - Clave: ${seedPassword}`);
 
     console.log("\n3. Creando Categorías...");
     const buzosCat = await CategoryModel.create({

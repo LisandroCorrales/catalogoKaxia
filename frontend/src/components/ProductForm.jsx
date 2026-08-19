@@ -23,6 +23,7 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
   const [sizeSpecs, setSizeSpecs] = useState({});
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [removedImages, setRemovedImages] = useState([]); // Rastrear fotos eliminadas de Cloudinary
 
   const parseMeasurements = (str) => {
     if (!str) return { width: "", length: "" };
@@ -36,6 +37,11 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
 
   useEffect(() => {
     if (product) {
+      const initialImages = (product.images && product.images.length > 0 
+        ? product.images 
+        : [product.image, ...(product.gallery || [])].filter(Boolean)
+      ).map(url => ({ url, isLocal: false }));
+
       setFormData({
         name: product.name || "",
         price: product.price || "",
@@ -48,7 +54,7 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
         sizes: product.sizes || [],
         tags: product.tags || [],
         image: product.image || "",
-        images: product.images && product.images.length > 0 ? product.images : [product.image, ...(product.gallery || [])].filter(Boolean),
+        images: initialImages,
         measurements: product.measurements || {}
       });
 
@@ -77,6 +83,7 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
       });
       setSizeSpecs({});
     }
+    setRemovedImages([]);
     setError("");
   }, [product, isOpen, categories]);
 
@@ -96,29 +103,45 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
   };
 
   const handleRemoveImage = (indexToRemove) => {
+    const imgObj = formData.images[indexToRemove];
+    if (imgObj.isLocal) {
+      URL.revokeObjectURL(imgObj.url);
+    } else {
+      setRemovedImages(prev => [...prev, imgObj.url]);
+    }
     setFormData(prev => ({
       ...prev,
       images: prev.images.filter((_, idx) => idx !== indexToRemove)
     }));
   };
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
 
-    setUploading(true);
     setError("");
     try {
-      const result = await uploadService.uploadImage(file);
+      const newImages = files.map(file => {
+        const previewUrl = URL.createObjectURL(file);
+        return { url: previewUrl, isLocal: true, file };
+      });
       setFormData(prev => ({
         ...prev,
-        images: [...prev.images, result.url]
+        images: [...prev.images, ...newImages]
       }));
     } catch (err) {
-      setError("Error al subir la imagen.");
-    } finally {
-      setUploading(false);
+      setError("Error al procesar las imágenes locales.");
     }
+  };
+
+  const handleClose = () => {
+    formData.images.forEach(img => {
+      if (img.isLocal) {
+        URL.revokeObjectURL(img.url);
+      }
+    });
+    setRemovedImages([]);
+    onClose();
   };
 
   const handleSpecChange = (size, key, value) => {
@@ -180,7 +203,7 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
     const prodTags = [...(product.tags || [])].sort().join(",");
     if (formTags !== prodTags) return true;
 
-    const formImages = [...formData.images].sort().join(",");
+    const formImages = formData.images.map(img => img.url).sort().join(",");
     const prodImages = [...(product.images || (product.image ? [product.image] : []))].sort().join(",");
     if (formImages !== prodImages) return true;
 
@@ -207,17 +230,57 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
                       formData.categoryId &&
                       areSizesSpecsValid;
 
-  const canSave = isFormValid && hasChanges();
+  const canSave = isFormValid && hasChanges() && !uploading;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!canSave) return;
 
-    onSave({
-      ...formData,
-      image: formData.images[0], // Main thumbnail
-      price: Number(formData.price)
-    });
+    setUploading(true);
+    setError("");
+    try {
+      // 1. Subir imágenes locales de forma diferida a Cloudinary
+      const finalImageUrls = [];
+      for (const imgObj of formData.images) {
+        if (imgObj.isLocal) {
+          const result = await uploadService.uploadImage(imgObj.file);
+          finalImageUrls.push(result.url);
+        } else {
+          finalImageUrls.push(imgObj.url);
+        }
+      }
+
+      // 2. Borrar imágenes eliminadas de Cloudinary
+      for (const imgUrl of removedImages) {
+        try {
+          await uploadService.deleteImage(imgUrl);
+        } catch (delErr) {
+          console.error("Error al borrar imagen en Cloudinary:", delErr);
+        }
+      }
+
+      // 3. Limpiar estado y revocar blobs locales
+      setRemovedImages([]);
+      formData.images.forEach(img => {
+        if (img.isLocal) {
+          URL.revokeObjectURL(img.url);
+        }
+      });
+
+      // 4. Disparar el guardado del producto
+      const { images, ...rest } = formData;
+      onSave({
+        ...rest,
+        image: finalImageUrls[0], // Primera imagen como imagen principal
+        gallery: finalImageUrls.slice(1), // Las imágenes restantes como galería
+        price: Number(formData.price)
+      });
+    } catch (err) {
+      setError("Error al subir las imágenes o al guardar el producto.");
+      console.error(err);
+    } finally {
+      setUploading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -225,7 +288,7 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/75 backdrop-blur-sm" onClick={handleClose} />
 
       {/* Modal Container */}
       <div className="flex min-h-screen items-center justify-center p-4">
@@ -235,7 +298,7 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
             <h3 className="text-xl font-bold text-slate-100">
               {product ? "Editar Producto" : "Nuevo Producto"}
             </h3>
-            <button onClick={onClose} className="text-slate-455 hover:text-slate-100 transition-colors cursor-pointer bg-transparent border-0">
+            <button type="button" onClick={handleClose} className="text-slate-400 hover:text-slate-100 transition-colors cursor-pointer bg-transparent border-0">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -313,16 +376,16 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
                         {uploading ? "Subiendo archivo..." : "Seleccionar Imagen"}
                       </span>
                       <span className="text-[10px] text-slate-500 mt-1">Desde tu celular o computadora</span>
-                      <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={uploading} />
+                      <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" disabled={uploading} />
                     </label>
                   </div>
                   
                   {/* Grid de miniaturas */}
                   {formData.images.length > 0 && (
                     <div className="mt-3 grid grid-cols-4 gap-2.5 p-3 bg-slate-950/40 rounded-xl border border-white/5 max-h-40 overflow-y-auto">
-                      {formData.images.map((imgUrl, idx) => (
+                      {formData.images.map((imgObj, idx) => (
                         <div key={idx} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-white/10 group bg-slate-900">
-                          <img src={imgUrl} alt={`Vista ${idx}`} className="w-full h-full object-cover" />
+                          <img src={imgObj.url} alt={`Vista ${idx}`} className="w-full h-full object-cover" />
                           
                           {/* Badge de Principal en la primera foto */}
                           {idx === 0 && (
@@ -452,7 +515,7 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
             <div className="flex justify-end gap-3 border-t border-white/10 pt-5">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="bg-[#182032] border border-white/15 text-slate-200 hover:text-white hover:bg-[#1f293e] hover:border-white/30 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer"
               >
                 Cancelar

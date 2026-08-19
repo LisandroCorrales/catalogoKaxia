@@ -1,6 +1,8 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
-export default function ErrorPage({ code = "404", onNavigateToCatalog, onNavigateToLogin }) {
+export default function ErrorPage({ code = "404" }) {
+  const navigate = useNavigate();
   const errorDetails = {
     "401": {
       title: "No Autorizado",
@@ -13,7 +15,7 @@ export default function ErrorPage({ code = "404", onNavigateToCatalog, onNavigat
       title: "Acceso Denegado",
       subtitle: "No tienes permisos para acceder aquí.",
       message: "Tu nivel de acceso actual no cuenta con las autorizaciones de seguridad requeridas para visualizar este panel administrativo.",
-      showLogin: true,
+      showLogin: false,
       glowColor: "shadow-red-500/10 border-red-500/20 text-red-400"
     },
     "404": {
@@ -60,16 +62,16 @@ export default function ErrorPage({ code = "404", onNavigateToCatalog, onNavigat
         <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4 select-none">
           <button
             type="button"
-            onClick={onNavigateToCatalog}
+            onClick={() => navigate("/")}
             className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold uppercase tracking-wider transition-all hover:scale-[1.01] active:scale-95 cursor-pointer border-0 shadow-lg shadow-black/20"
           >
             Volver al Catálogo
           </button>
           
-          {details.showLogin && onNavigateToLogin && (
+          {details.showLogin && (
             <button
               type="button"
-              onClick={onNavigateToLogin}
+              onClick={() => navigate("/login")}
               className="px-6 py-3 bg-[#CDD8E8] hover:bg-white text-slate-900 rounded-xl text-xs font-black uppercase tracking-wider transition-all hover:scale-[1.01] active:scale-95 cursor-pointer border-0 shadow-lg shadow-[#CDD8E8]/10"
             >
               Iniciar Sesión

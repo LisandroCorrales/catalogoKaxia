@@ -7,17 +7,17 @@ export default function CartDrawer({ isOpen, cartItems = [], onClose, onUpdateQu
   const handleCheckout = () => {
     const WHATSAPP_PHONE = import.meta.env.VITE_WHATSAPP_PHONE || "5491137639321";
 
-    let message = "👕 ¡Hola KAXIA! Me gustaría realizar un pedido con las siguientes prendas:\n\n";
+    let message = "¡Hola KAXIA! Me gustaría realizar un pedido con las siguientes prendas:\n\n";
 
     cartItems.forEach((item, index) => {
       message += `${index + 1}. *${item.product.name}*\n`;
       message += `   • Talle: ${item.size}\n`;
-      message += `   • Color: ${item.color.name} (${item.color.hexCode})\n`;
+      message += `   • Color: ${item.color.name}\n`;
       message += `   • Cantidad: ${item.quantity}\n`;
       message += `   • Subtotal: $${(item.product.price * item.quantity).toLocaleString("es-AR")}\n\n`;
     });
 
-    message += `💰 *Total del pedido: $${total.toLocaleString("es-AR")}*\n\n`;
+    message += `*Total del pedido: $${total.toLocaleString("es-AR")}*\n\n`;
     message += "Quedo a la espera para coordinar el pago y el envío. ¡Muchas gracias!";
 
     analyticsService.trackOrder(cartItems, total);

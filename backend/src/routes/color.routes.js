@@ -10,9 +10,9 @@ export const createColorRouter = (colorService) => {
   router.get("/", controller.getAll);
   router.get("/:id", controller.getById);
 
-  router.post("/", authenticateToken, requireRole([Rol.ADMIN]), controller.create);
+  router.post("/", authenticateToken, requireRole([Rol.ADMIN, Rol.VENDEDOR]), controller.create);
   router.put("/:id", authenticateToken, requireRole([Rol.ADMIN, Rol.VENDEDOR]), controller.update);
-  router.delete("/:id", authenticateToken, requireRole([Rol.ADMIN]), controller.delete);
+  router.delete("/:id", authenticateToken, requireRole([Rol.ADMIN, Rol.VENDEDOR]), controller.delete);
 
   return router;
 };

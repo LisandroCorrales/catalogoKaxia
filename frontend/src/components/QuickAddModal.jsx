@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { analyticsService } from "../services/api.js";
 
-export default function QuickAddModal({ product, colors = [], onClose, onConfirm }) {
+export default function QuickAddModal({ product, colors = [], tags = [], onClose, onConfirm }) {
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
@@ -52,6 +52,7 @@ export default function QuickAddModal({ product, colors = [], onClose, onConfirm
   // Obtener imágenes del producto
   const productImages = product.images && product.images.length > 0 ? product.images : [product.image, ...(product.gallery || [])].filter(Boolean);
   const availableColors = colors.filter(c => product.colors.includes(c.id));
+  const availableTags = tags.filter(t => product.tags && product.tags.includes(t.id));
 
   const handleAddClick = () => {
     if (!selectedSize || !selectedColor) return;
@@ -71,18 +72,26 @@ export default function QuickAddModal({ product, colors = [], onClose, onConfirm
 
         {/* Panel de Imagen (Izquierda en desktop al ras, Arriba en móvil al ras) */}
         <div className="w-full sm:w-[260px] relative shrink-0 min-h-[320px] sm:min-h-0 sm:self-stretch overflow-hidden select-none">
-          {/* Imagen Principal */}
+          {/* Contenedor deslizable flex */}
           <div
-            className="absolute inset-0 w-full h-full"
+            className="absolute inset-0 w-full h-full flex"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
+            style={{
+              transform: `translateX(-${activeImageIndex * 100}%)`,
+              transition: "transform 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94)"
+            }}
           >
-            <img
-              src={productImages[activeImageIndex]}
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
+            {productImages.map((imgUrl, idx) => (
+              <div key={idx} className="w-full h-full shrink-0">
+                <img
+                  src={imgUrl}
+                  alt={`${product.name} - ${idx}`}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ))}
           </div>
 
           {/* Gradiente inferior para legibilidad de los puntitos */}
@@ -118,7 +127,7 @@ export default function QuickAddModal({ product, colors = [], onClose, onConfirm
                   e.stopPropagation();
                   setActiveImageIndex((prev) => (prev - 1 + productImages.length) % productImages.length);
                 }}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white/80 hover:bg-white text-navy rounded-full flex items-center justify-center shadow-md cursor-pointer border-0 z-10"
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white/80 hover:bg-white text-navy rounded-full hidden sm:flex items-center justify-center shadow-md cursor-pointer border-0 z-10"
                 title="Imagen anterior"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
@@ -133,7 +142,7 @@ export default function QuickAddModal({ product, colors = [], onClose, onConfirm
                   e.stopPropagation();
                   setActiveImageIndex((prev) => (prev + 1) % productImages.length);
                 }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white/80 hover:bg-white text-navy rounded-full flex items-center justify-center shadow-md cursor-pointer border-0 z-10"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-white/80 hover:bg-white text-navy rounded-full hidden sm:flex items-center justify-center shadow-md cursor-pointer border-0 z-10"
                 title="Siguiente imagen"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
@@ -147,8 +156,33 @@ export default function QuickAddModal({ product, colors = [], onClose, onConfirm
         {/* Contenido y Opciones */}
         <div className="p-6 flex-grow flex flex-col justify-between">
           <div>
+            {/* Etiquetas (Tags) del producto */}
+            {availableTags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2.5 select-none">
+                {availableTags.map(tag => (
+                  <span
+                    key={tag.id}
+                    className="text-[9px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-md"
+                    style={{
+                      backgroundColor: `${tag.color}15`,
+                      color: tag.color
+                    }}
+                  >
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
+
             <h3 className="text-[17px] font-black text-navy leading-tight mb-0.5">{product.name}</h3>
-            <p className="text-[11px] text-slate-400 mb-3.5">{product.fabric}</p>
+            <p className="text-[11px] text-slate-400 mb-2">{product.fabric}</p>
+
+            {/* Descripción / Detalles */}
+            {product.details && (
+              <p className="text-left text-[11px] text-slate-500 leading-relaxed italic mb-3.5">
+                {product.details}
+              </p>
+            )}
 
             {/* Talles */}
             <div className="mb-4">
@@ -160,8 +194,8 @@ export default function QuickAddModal({ product, colors = [], onClose, onConfirm
                     type="button"
                     onClick={() => setSelectedSize(size)}
                     className={`w-9 h-9 rounded-lg border font-mono flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${selectedSize === size
-                        ? "border-navy bg-navy text-white font-extrabold"
-                        : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-400"
+                      ? "border-navy bg-navy text-white font-extrabold"
+                      : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-400"
                       }`}
                   >
                     {size}
@@ -180,8 +214,8 @@ export default function QuickAddModal({ product, colors = [], onClose, onConfirm
                     type="button"
                     onClick={() => setSelectedColor(color)}
                     className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-[11px] font-semibold transition-all cursor-pointer ${selectedColor?.id === color.id
-                        ? "border-navy bg-slate-50 text-navy font-bold shadow-xs"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-400"
+                      ? "border-navy bg-slate-50 text-navy font-bold shadow-xs"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-400"
                       }`}
                   >
                     <span

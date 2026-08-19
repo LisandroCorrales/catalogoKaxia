@@ -170,6 +170,13 @@ export default function ProductCard({ product, allColors = [], allTags = [], onA
           <p>Talles: <span className="text-slate-700 font-medium">{product.sizes.join(" - ")}</span></p>
         </div>
 
+        {/* Descripción / Detalles */}
+        {product.details && (
+          <p className="text-left text-[11px] text-slate-600 line-clamp-2 mb-2.5" title={product.details}>
+            {product.details}
+          </p>
+        )}
+
         {/* Círculos de Colores */}
         {productColors.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-3.5 select-none">

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import CatalogPage from "./pages/CatalogPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import AdminPage from "./pages/AdminPage.jsx";
@@ -6,9 +7,121 @@ import VendedorPage from "./pages/VendedorPage.jsx";
 import ErrorPage from "./pages/ErrorPage.jsx";
 import { authService } from "./services/api.js";
 
+// Componente de Enrutamiento Protegido para Administrador
+function AdminRoute({ currentUser, children }) {
+  if (!currentUser) {
+    return <Navigate to="/login" replace />;
+  }
+  if (currentUser.role !== "Admin") {
+    return <ErrorPage code="403" />;
+  }
+  return children;
+}
+
+// Componente de Enrutamiento Protegido para Vendedor o Admin
+function VendedorRoute({ currentUser, children }) {
+  if (!currentUser) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
+
+function AppRoutes({ currentUser, setCurrentUser, cart, setCart, isCartOpen, setIsCartOpen }) {
+  const navigate = useNavigate();
+
+  const handleLoginSuccess = (user) => {
+    setCurrentUser(user);
+    if (user.role === "Admin") {
+      navigate("/admin");
+    } else {
+      navigate("/vendedor");
+    }
+  };
+
+  const handleLogout = () => {
+    navigate("/");
+    setTimeout(() => {
+      authService.logout();
+      setCurrentUser(null);
+    }, 0);
+  };
+
+  return (
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <CatalogPage
+            onNavigateToLogin={() => navigate("/login")}
+            onNavigateToAdmin={() => {
+              if (currentUser) {
+                if (currentUser.role === "Admin") {
+                  navigate("/admin");
+                } else if (currentUser.role === "Vendedor") {
+                  navigate("/vendedor");
+                }
+              } else {
+                navigate("/login");
+              }
+            }}
+            currentUser={currentUser}
+            cart={cart}
+            setCart={setCart}
+            isCartOpen={isCartOpen}
+            setIsCartOpen={setIsCartOpen}
+          />
+        }
+      />
+      <Route
+        path="/login"
+        element={
+          <LoginPage
+            onLoginSuccess={handleLoginSuccess}
+            onNavigateToCatalog={() => navigate("/")}
+          />
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute currentUser={currentUser}>
+            <AdminPage
+              currentUser={currentUser}
+              onLogout={handleLogout}
+              onNavigateToCatalog={() => navigate("/")}
+            />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/vendedor"
+        element={
+          <VendedorRoute currentUser={currentUser}>
+            <VendedorPage
+              currentUser={currentUser}
+              onLogout={handleLogout}
+              onNavigateToCatalog={() => navigate("/")}
+            />
+          </VendedorRoute>
+        }
+      />
+      <Route
+        path="*"
+        element={
+          <ErrorPage
+            code="404"
+            onNavigateToCatalog={() => navigate("/")}
+            onNavigateToLogin={() => navigate("/login")}
+          />
+        }
+      />
+    </Routes>
+  );
+}
+
 function App() {
-  const [page, setPage] = useState("catalog"); // 'catalog' | 'login' | 'admin' | 'vendedor'
   const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   
   // Estado global del carrito de compras (persistencia local)
   const [cart, setCart] = useState(() => {
@@ -31,102 +144,31 @@ function App() {
     const savedUser = authService.getCurrentUser();
     if (savedUser) {
       setCurrentUser(savedUser);
-      if (savedUser.role === "Admin") {
-        setPage("admin");
-      } else if (savedUser.role === "Vendedor") {
-        setPage("vendedor");
-      }
     }
+    setLoading(false);
   }, []);
 
-  const handleLoginSuccess = (user) => {
-    setCurrentUser(user);
-    if (user.role === "Admin") {
-      setPage("admin");
-    } else {
-      setPage("vendedor");
-    }
-  };
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setPage("catalog");
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#07090e] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-[#CDD8E8] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#07090e]">
-      {page === "catalog" && (
-        <CatalogPage
-          onNavigateToLogin={() => setPage("login")}
-          onNavigateToAdmin={() => {
-            if (currentUser && currentUser.role === "Vendedor") {
-              setPage("vendedor");
-            } else {
-              setPage("admin");
-            }
-          }}
+    <BrowserRouter>
+      <div className="min-h-screen bg-[#07090e]">
+        <AppRoutes
           currentUser={currentUser}
+          setCurrentUser={setCurrentUser}
           cart={cart}
           setCart={setCart}
           isCartOpen={isCartOpen}
           setIsCartOpen={setIsCartOpen}
         />
-      )}
-
-      {page === "login" && (
-        <LoginPage
-          onLoginSuccess={handleLoginSuccess}
-          onNavigateToCatalog={() => setPage("catalog")}
-        />
-      )}
-
-      {page === "admin" && (
-        !currentUser ? (
-          <ErrorPage
-            code="401"
-            onNavigateToCatalog={() => setPage("catalog")}
-            onNavigateToLogin={() => setPage("login")}
-          />
-        ) : currentUser.role !== "Admin" ? (
-          <ErrorPage
-            code="403"
-            onNavigateToCatalog={() => setPage("catalog")}
-            onNavigateToLogin={() => setPage("login")}
-          />
-        ) : (
-          <AdminPage
-            currentUser={currentUser}
-            onLogout={handleLogout}
-            onNavigateToCatalog={() => setPage("catalog")}
-          />
-        )
-      )}
-
-      {page === "vendedor" && (
-        !currentUser ? (
-          <ErrorPage
-            code="401"
-            onNavigateToCatalog={() => setPage("catalog")}
-            onNavigateToLogin={() => setPage("login")}
-          />
-        ) : (
-          <VendedorPage
-            currentUser={currentUser}
-            onLogout={handleLogout}
-            onNavigateToCatalog={() => setPage("catalog")}
-          />
-        )
-      )}
-
-      {/* Fallback de 404 para cualquier estado no válido */}
-      {!["catalog", "login", "admin", "vendedor"].includes(page) && (
-        <ErrorPage
-          code="404"
-          onNavigateToCatalog={() => setPage("catalog")}
-          onNavigateToLogin={() => setPage("login")}
-        />
-      )}
-    </div>
+      </div>
+    </BrowserRouter>
   );
 }
 

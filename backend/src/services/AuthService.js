@@ -42,6 +42,12 @@ export class AuthService {
       throw error;
     }
 
+    if (user.isDeleted) {
+      const error = new Error("Este usuario ha sido desactivado.");
+      error.statusCode = 401;
+      throw error;
+    }
+
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       const error = new Error("Credenciales inválidas.");
@@ -58,7 +64,7 @@ export class AuthService {
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
       tokenSecret,
-      { expiresIn: "8h" }
+      { expiresIn: "1h" }
     );
 
     return {
