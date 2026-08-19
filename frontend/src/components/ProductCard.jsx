@@ -9,7 +9,7 @@ export default function ProductCard({ product, allColors = [], allTags = [], onA
 
   // Obtener array de fotos de la simulación del backend
   const productImages = [product.image, ...(product.gallery || [])];
-  
+
   // Estado local para la imagen activa de la tarjeta
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
 
@@ -48,18 +48,33 @@ export default function ProductCard({ product, allColors = [], allTags = [], onA
   return (
     <div className={`bg-white rounded-[24px] border border-slate-200/80 flex flex-col shadow-xs group text-slate-800 transition-all ${isOutOfStock ? "opacity-60" : ""}`}>
       {/* Imagen del Producto (Carrusel e indicadores al ras del borde superior) */}
-      <div 
+      <div
         className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100 select-none rounded-t-[23px]"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <img
-          src={productImages[currentImgIndex]}
-          alt={product.name}
-          className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
-          loading="lazy"
-        />
+        {/* Contenedor deslizable flex */}
+        <div 
+          className="flex w-full h-full"
+          style={{
+            transform: `translateX(-${currentImgIndex * 100}%)`,
+            transitionProperty: "transform",
+            transitionDuration: "250ms",
+            transitionTimingFunction: "cubic-bezier(0.25, 0.46, 0.45, 0.94)"
+          }}
+        >
+          {productImages.map((imgUrl, idx) => (
+            <div key={idx} className="w-full h-full shrink-0">
+              <img
+                src={imgUrl}
+                alt={`${product.name} - ${idx}`}
+                className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
+                loading="lazy"
+              />
+            </div>
+          ))}
+        </div>
 
         {/* Marca Badge */}
         <span className="absolute top-3 left-3 bg-navy/80 backdrop-blur-xs text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-md uppercase tracking-wider select-none z-10">
@@ -79,9 +94,8 @@ export default function ProductCard({ product, allColors = [], allTags = [], onA
             {productImages.map((_, idx) => (
               <span
                 key={idx}
-                className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
-                  currentImgIndex === idx ? "bg-white scale-110 w-3.5" : "bg-white/40"
-                }`}
+                className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${currentImgIndex === idx ? "bg-white scale-110 w-3.5" : "bg-white/40"
+                  }`}
               />
             ))}
           </div>
@@ -129,12 +143,12 @@ export default function ProductCard({ product, allColors = [], allTags = [], onA
         {productTags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-2 select-none">
             {productTags.map(tag => (
-              <span 
+              <span
                 key={tag.id}
                 className="text-[9px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-md"
-                style={{ 
-                  backgroundColor: `${tag.color}15`, 
-                  color: tag.color 
+                style={{
+                  backgroundColor: `${tag.color}15`,
+                  color: tag.color
                 }}
               >
                 {tag.name}

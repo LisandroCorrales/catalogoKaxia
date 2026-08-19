@@ -8,10 +8,10 @@ export default function AnnouncementBar({ announcements = [] }) {
   const formatText = (text) => {
     const flagSvg = (
       <svg className="w-4 h-2.5 rounded-xs shadow-xs inline-block shrink-0 select-none ml-1.5 relative -top-[1px]" viewBox="0 0 14 9" xmlns="http://www.w3.org/2000/svg">
-        <rect fill="#74acdf" width="14" height="9"/>
-        <rect fill="#ffffff" y="3" width="14" height="3"/>
-        <circle fill="#f6b316" cx="7" cy="4.5" r="1.2"/>
-        <circle fill="#845c1c" cx="7" cy="4.5" r="0.4"/>
+        <rect fill="#74acdf" width="14" height="9" />
+        <rect fill="#ffffff" y="3" width="14" height="3" />
+        <circle fill="#f6b316" cx="7" cy="4.5" r="1.2" />
+        <circle fill="#845c1c" cx="7" cy="4.5" r="0.4" />
       </svg>
     );
 

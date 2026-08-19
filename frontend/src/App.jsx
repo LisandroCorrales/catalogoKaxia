@@ -3,6 +3,7 @@ import CatalogPage from "./pages/CatalogPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import AdminPage from "./pages/AdminPage.jsx";
 import VendedorPage from "./pages/VendedorPage.jsx";
+import ErrorPage from "./pages/ErrorPage.jsx";
 import { authService } from "./services/api.js";
 
 function App() {
@@ -80,18 +81,49 @@ function App() {
       )}
 
       {page === "admin" && (
-        <AdminPage
-          currentUser={currentUser}
-          onLogout={handleLogout}
-          onNavigateToCatalog={() => setPage("catalog")}
-        />
+        !currentUser ? (
+          <ErrorPage
+            code="401"
+            onNavigateToCatalog={() => setPage("catalog")}
+            onNavigateToLogin={() => setPage("login")}
+          />
+        ) : currentUser.role !== "Admin" ? (
+          <ErrorPage
+            code="403"
+            onNavigateToCatalog={() => setPage("catalog")}
+            onNavigateToLogin={() => setPage("login")}
+          />
+        ) : (
+          <AdminPage
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            onNavigateToCatalog={() => setPage("catalog")}
+          />
+        )
       )}
 
       {page === "vendedor" && (
-        <VendedorPage
-          currentUser={currentUser}
-          onLogout={handleLogout}
+        !currentUser ? (
+          <ErrorPage
+            code="401"
+            onNavigateToCatalog={() => setPage("catalog")}
+            onNavigateToLogin={() => setPage("login")}
+          />
+        ) : (
+          <VendedorPage
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            onNavigateToCatalog={() => setPage("catalog")}
+          />
+        )
+      )}
+
+      {/* Fallback de 404 para cualquier estado no válido */}
+      {!["catalog", "login", "admin", "vendedor"].includes(page) && (
+        <ErrorPage
+          code="404"
           onNavigateToCatalog={() => setPage("catalog")}
+          onNavigateToLogin={() => setPage("login")}
         />
       )}
     </div>
