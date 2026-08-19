@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { productService, categoryService, tagService, colorService, announcementService } from "../services/api.js";
+import { productService, categoryService, tagService, colorService, announcementService, analyticsService } from "../services/api.js";
 import Header from "../components/Header.jsx";
 import ProductCard from "../components/ProductCard.jsx";
 import CartDrawer from "../components/CartDrawer.jsx";
@@ -32,6 +32,10 @@ export default function CatalogPage({ onNavigateToLogin, onNavigateToAdmin, curr
   const [sizeTableProduct, setSizeTableProduct] = useState(null);
 
   useEffect(() => {
+    analyticsService.trackSession();
+  }, []);
+
+  useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
@@ -50,7 +54,17 @@ export default function CatalogPage({ onNavigateToLogin, onNavigateToAdmin, curr
           categoryId: selectedCategory,
           tagId: selectedTag
         });
-        setProducts(prodsRes);
+        
+        // Ordenar productos: disponibles primero, sin stock al final
+        const sortedProds = [...prodsRes].sort((a, b) => {
+          const aOut = a.stock === "Sin Stock";
+          const bOut = b.stock === "Sin Stock";
+          if (aOut && !bOut) return 1;
+          if (!aOut && bOut) return -1;
+          return 0;
+        });
+
+        setProducts(sortedProds);
       } catch (err) {
         console.error("Error al cargar datos del catálogo:", err);
       } finally {
@@ -65,6 +79,7 @@ export default function CatalogPage({ onNavigateToLogin, onNavigateToAdmin, curr
   };
 
   const handleConfirmQuickAdd = (product, size, color, quantity) => {
+    analyticsService.trackAddToCart(product.id);
     setCart(prev => {
       const idx = prev.findIndex(item =>
         item.product.id === product.id &&
@@ -229,7 +244,7 @@ export default function CatalogPage({ onNavigateToLogin, onNavigateToAdmin, curr
             <p className="text-xs text-slate-500 mt-1">Prueba seleccionando otros filtros.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
             {products.map(product => (
               <ProductCard
                 key={product.id}

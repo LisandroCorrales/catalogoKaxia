@@ -1,4 +1,5 @@
 import React from "react";
+import { analyticsService } from "../services/api.js";
 
 export default function CartDrawer({ isOpen, cartItems = [], onClose, onUpdateQuantity, onRemoveItem, onClearCart }) {
   const total = cartItems.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
@@ -19,6 +20,7 @@ export default function CartDrawer({ isOpen, cartItems = [], onClose, onUpdateQu
     message += `💰 *Total del pedido: $${total.toLocaleString("es-AR")}*\n\n`;
     message += "Quedo a la espera para coordinar el pago y el envío. ¡Muchas gracias!";
 
+    analyticsService.trackOrder(cartItems, total);
     const waUrl = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
     window.open(waUrl, "_blank");
   };
@@ -135,13 +137,16 @@ export default function CartDrawer({ isOpen, cartItems = [], onClose, onUpdateQu
                   <div className="flex-grow flex flex-col justify-between">
                     <div>
                       <h4 className="font-bold text-sm text-slate-800 line-clamp-1">{item.product.name}</h4>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Talle: <span className="font-mono text-slate-700 font-bold">{item.size}</span> | Color:{" "}
+                      <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                        <span>Talle:</span> <span className="font-mono text-slate-700 font-bold">{item.size}</span>
+                        <span className="text-slate-300">|</span>
+                        <span>Color:</span>
                         <span
-                          className="w-2.5 h-2.5 rounded-full inline-block align-middle border border-slate-300"
+                          className="w-2.5 h-2.5 rounded-full inline-block border border-slate-300 shrink-0"
                           style={{ backgroundColor: item.color.hexCode }}
                           title={item.color.name}
                         />
+                        <span className="text-slate-700 font-medium">{item.color.name}</span>
                       </p>
                     </div>
                     {/* Price and quantity selector */}

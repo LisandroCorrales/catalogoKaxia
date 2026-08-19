@@ -4,6 +4,9 @@ export default function ProductCard({ product, allColors = [], allTags = [], onA
   // Obtener colores del producto
   const productColors = allColors.filter(c => product.colors.includes(c.id));
 
+  // Obtener etiquetas (tags) del producto
+  const productTags = allTags.filter(t => product.tags && product.tags.includes(t.id));
+
   // Obtener array de fotos de la simulación del backend
   const productImages = [product.image, ...(product.gallery || [])];
   
@@ -120,16 +123,34 @@ export default function ProductCard({ product, allColors = [], allTags = [], onA
         )}
       </div>
 
-      {/* Contenido (Padding 5) */}
-      <div className="p-5 flex-grow flex flex-col justify-between">
+      {/* Contenido (Padding adaptativo) */}
+      <div className="p-4 md:p-5 flex-grow flex flex-col justify-between">
+        {/* Etiquetas (Tags) del producto */}
+        {productTags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-2 select-none">
+            {productTags.map(tag => (
+              <span 
+                key={tag.id}
+                className="text-[9px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-md"
+                style={{ 
+                  backgroundColor: `${tag.color}15`, 
+                  color: tag.color 
+                }}
+              >
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* Nombre y Precio */}
-        <div className="flex justify-between items-start mb-3">
-          <h3 className="font-bold text-[16px] text-navy leading-tight text-left">{product.name}</h3>
-          <span className="font-extrabold text-[15px] text-navy shrink-0">${product.price.toLocaleString("es-AR")}</span>
+        <div className="flex justify-between items-start mb-2.5">
+          <h3 className="font-bold text-sm md:text-[16px] text-navy leading-tight text-left">{product.name}</h3>
+          <span className="font-extrabold text-sm md:text-[15px] text-navy shrink-0 ml-1">${product.price.toLocaleString("es-AR")}</span>
         </div>
 
         {/* Detalles Técnicos */}
-        <div className="text-left space-y-1.5 text-[11px] text-slate-500 mb-3.5">
+        <div className="text-left space-y-1 text-[11px] text-slate-500 mb-2.5">
           <p>Tela: <span className="text-slate-700 font-medium">{product.fabric}</span></p>
           <p>Estampado: <span className="text-slate-700 font-medium">{product.print}</span></p>
           <p>Talles: <span className="text-slate-700 font-medium">{product.sizes.join(" - ")}</span></p>
@@ -137,7 +158,7 @@ export default function ProductCard({ product, allColors = [], allTags = [], onA
 
         {/* Círculos de Colores */}
         {productColors.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4 select-none">
+          <div className="flex flex-wrap gap-2 mb-3.5 select-none">
             {productColors.map(color => (
               <span
                 key={color.id}
@@ -154,10 +175,10 @@ export default function ProductCard({ product, allColors = [], allTags = [], onA
         )}
 
         {/* Botones de Acción */}
-        <div className="flex gap-2 pt-1 w-full">
+        <div className="flex flex-col sm:flex-row gap-1.5 pt-1 w-full">
           <button
             onClick={() => onOpenSizesTable(product)}
-            className="flex-1 btn-outline-navy py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-wider cursor-pointer text-center"
+            className="w-full sm:flex-1 btn-outline-navy py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-wider cursor-pointer text-center"
             title="Ver Tabla de Talles"
           >
             VER TALLES
@@ -165,7 +186,7 @@ export default function ProductCard({ product, allColors = [], allTags = [], onA
           {isOutOfStock ? (
             <button
               disabled
-              className="flex-1 bg-slate-200 text-slate-400 py-2.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider cursor-not-allowed text-center border-0"
+              className="w-full sm:flex-1 bg-slate-200 text-slate-400 py-2.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider cursor-not-allowed text-center border-0"
               title="Producto sin stock disponible"
             >
               SIN STOCK
@@ -173,7 +194,7 @@ export default function ProductCard({ product, allColors = [], allTags = [], onA
           ) : (
             <button
               onClick={() => onAddToCart(product)}
-              className="flex-1 btn-navy py-2.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider cursor-pointer text-center"
+              className="w-full sm:flex-1 btn-navy py-2.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider cursor-pointer text-center"
               title="Añadir al carrito"
             >
               AGREGAR

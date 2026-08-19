@@ -512,3 +512,64 @@ export const announcementService = {
     return items;
   }
 };
+
+// Analíticas e Intención de Compra
+const INITIAL_ANALYTICS = {
+  sessions: 1540,
+  ordersCount: 124,
+  montoTotal: 1250000,
+  productViews: {
+    "prod_1": 420,
+    "prod_2": 310,
+    "prod_3": 190
+  },
+  productAdds: {
+    "prod_1": 84,
+    "prod_2": 56,
+    "prod_3": 12
+  },
+  productOrders: {
+    "prod_1": 45,
+    "prod_2": 32,
+    "prod_3": 8
+  }
+};
+
+export const analyticsService = {
+  getStats: async () => {
+    await delay();
+    return getStorageItem("kaxia_analytics", INITIAL_ANALYTICS);
+  },
+  trackSession: async () => {
+    const stats = getStorageItem("kaxia_analytics", INITIAL_ANALYTICS);
+    stats.sessions += 1;
+    setStorageItem("kaxia_analytics", stats);
+    return stats;
+  },
+  trackView: async (productId) => {
+    const stats = getStorageItem("kaxia_analytics", INITIAL_ANALYTICS);
+    if (!stats.productViews) stats.productViews = {};
+    stats.productViews[productId] = (stats.productViews[productId] || 0) + 1;
+    setStorageItem("kaxia_analytics", stats);
+    return stats;
+  },
+  trackAddToCart: async (productId) => {
+    const stats = getStorageItem("kaxia_analytics", INITIAL_ANALYTICS);
+    if (!stats.productAdds) stats.productAdds = {};
+    stats.productAdds[productId] = (stats.productAdds[productId] || 0) + 1;
+    setStorageItem("kaxia_analytics", stats);
+    return stats;
+  },
+  trackOrder: async (cartItems, total) => {
+    const stats = getStorageItem("kaxia_analytics", INITIAL_ANALYTICS);
+    stats.ordersCount += 1;
+    stats.montoTotal += total;
+    if (!stats.productOrders) stats.productOrders = {};
+    cartItems.forEach(item => {
+      const pid = item.product.id;
+      stats.productOrders[pid] = (stats.productOrders[pid] || 0) + item.quantity;
+    });
+    setStorageItem("kaxia_analytics", stats);
+    return stats;
+  }
+};

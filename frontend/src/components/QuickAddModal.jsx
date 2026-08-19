@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { analyticsService } from "../services/api.js";
 
 export default function QuickAddModal({ product, colors = [], onClose, onConfirm }) {
   const [selectedSize, setSelectedSize] = useState("");
@@ -35,7 +36,6 @@ export default function QuickAddModal({ product, colors = [], onClose, onConfirm
     setTouchEnd(0);
   };
 
-  // Inicializar o resetear el estado interno cada vez que cambia el producto
   useEffect(() => {
     if (product) {
       setSelectedSize(product.sizes[0] || "");
@@ -43,6 +43,7 @@ export default function QuickAddModal({ product, colors = [], onClose, onConfirm
       setSelectedColor(prodColors[0] || null);
       setSelectedQuantity(1);
       setActiveImageIndex(0);
+      analyticsService.trackView(product.id);
     }
   }, [product, colors]);
 
