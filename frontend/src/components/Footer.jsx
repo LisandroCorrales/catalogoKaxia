@@ -1,11 +1,27 @@
 import React from 'react';
 import logoImg from '../assets/logo.png';
 import isotypeImg from '../assets/isotipo kaxia.png';
+import { analyticsService } from '../services/api.js';
 
 
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_PHONE || "5491137639321";
 
 export default function Footer({ categories = [], onCategorySelect }) {
+  const handleConsultationClick = () => {
+    try {
+      analyticsService.trackConsultationClick();
+    } catch (e) {
+      console.error("Error tracking consultation click:", e);
+    }
+  };
+
+  const handleWholesalerClick = () => {
+    try {
+      analyticsService.trackWholesalerClick();
+    } catch (e) {
+      console.error("Error tracking wholesaler click:", e);
+    }
+  };
   const handleCategoryClick = (catId) => {
     if (onCategorySelect) {
       onCategorySelect(catId);
@@ -23,6 +39,7 @@ export default function Footer({ categories = [], onCategorySelect }) {
       <div className="bg-[#f8fafc] border-t border-b border-slate-200/80 py-12 px-6 text-center text-slate-800">
         <p className="text-slate-400 font-semibold text-xs tracking-wider uppercase mb-3.5">¿No encontrás lo que buscás?</p>
         <a
+          onClick={handleConsultationClick}
           href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola!%20Tengo%20una%20consulta.`}
           target="_blank"
           rel="noopener noreferrer"
@@ -114,7 +131,13 @@ export default function Footer({ categories = [], onCategorySelect }) {
                 </a>
               </li>
               <li>
-                <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola!%20Quiero%20hacer%20un%20pedido%20mayorista.`} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                <a 
+                  onClick={handleWholesalerClick}
+                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola!%20Quiero%20hacer%20un%20pedido%20mayorista.`} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="hover:text-white transition-colors"
+                >
                   Pedidos mayoristas
                 </a>
               </li>

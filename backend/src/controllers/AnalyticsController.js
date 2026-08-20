@@ -33,8 +33,8 @@ export class AnalyticsController {
 
   trackAddToCart = async (req, res, next) => {
     try {
-      const { productId } = req.body;
-      const stats = await this.analyticsService.trackAddToCart(productId);
+      const { productId, colorId, size, quantity } = req.body;
+      const stats = await this.analyticsService.trackAddToCart(productId, colorId, size, quantity);
       res.status(200).json(stats);
     } catch (error) {
       next(error);
@@ -45,6 +45,24 @@ export class AnalyticsController {
     try {
       const { cartItems, total } = req.body;
       const stats = await this.analyticsService.trackOrder(cartItems, total);
+      res.status(200).json(stats);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  trackConsultationClick = async (req, res, next) => {
+    try {
+      const stats = await this.analyticsService.trackConsultationClick();
+      res.status(200).json(stats);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  trackWholesalerClick = async (req, res, next) => {
+    try {
+      const stats = await this.analyticsService.trackWholesalerClick();
       res.status(200).json(stats);
     } catch (error) {
       next(error);

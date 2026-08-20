@@ -185,12 +185,20 @@ export const analyticsService = {
     const res = await apiClient.post("/analytics/view", { productId });
     return res.data;
   },
-  trackAddToCart: async (productId) => {
-    const res = await apiClient.post("/analytics/cart", { productId });
+  trackAddToCart: async (productId, colorId, size, quantity) => {
+    const res = await apiClient.post("/analytics/cart", { productId, colorId, size, quantity });
     return res.data;
   },
   trackOrder: async (cartItems, total) => {
     const res = await apiClient.post("/analytics/order", { cartItems, total });
+    return res.data;
+  },
+  trackConsultationClick: async () => {
+    const res = await apiClient.post("/analytics/consultation");
+    return res.data;
+  },
+  trackWholesalerClick: async () => {
+    const res = await apiClient.post("/analytics/wholesaler");
     return res.data;
   }
 };

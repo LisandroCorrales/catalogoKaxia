@@ -52,7 +52,16 @@ export class ProductRepository {
     if (filters.categoryId) query.categoryId = filters.categoryId;
     if (filters.tagId) query.tags = filters.tagId;
 
-    const docs = await ProductModel.find(query).sort({ createdAt: -1 });
+    let dbQuery = ProductModel.find(query).sort({ createdAt: -1 });
+
+    if (filters.limit !== undefined && filters.page !== undefined) {
+      const limit = parseInt(filters.limit) || 12;
+      const page = parseInt(filters.page) || 1;
+      const skip = (page - 1) * limit;
+      dbQuery = dbQuery.skip(skip).limit(limit);
+    }
+
+    const docs = await dbQuery;
     return docs.map(ProductRepository.toDomain);
   }
 

@@ -38,11 +38,10 @@ function SidebarContent({ activeTab, setActiveTab }) {
         <button
           key={tab.id}
           onClick={() => setActiveTab(tab.id)}
-          className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer border-0 ${
-            activeTab === tab.id 
-              ? "bg-[#CDD8E8] text-[#0d1222] font-extrabold shadow-md shadow-[#CDD8E8]/10" 
+          className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer border-0 ${activeTab === tab.id
+              ? "bg-[#CDD8E8] text-[#0d1222] font-extrabold shadow-md shadow-[#CDD8E8]/10"
               : "bg-transparent text-slate-400 hover:bg-[#CDD8E8]/5 hover:text-slate-100"
-          }`}
+            }`}
         >
           <span>{tab.icon}</span> <span>{tab.name}</span>
         </button>
@@ -313,11 +312,11 @@ export default function VendedorPage({ onLogout, onNavigateToCatalog, currentUse
         {isSidebarOpen && (
           <div className="md:hidden fixed inset-0 z-50 flex">
             {/* Backdrop */}
-            <div 
-              className="fixed inset-0 bg-black/80 backdrop-blur-xs transition-opacity" 
+            <div
+              className="fixed inset-0 bg-black/80 backdrop-blur-xs transition-opacity"
               onClick={() => setIsSidebarOpen(false)}
             />
-            
+
             {/* Drawer */}
             <aside className="relative w-64 max-w-[80vw] bg-[#07090e] border-r border-white/10 p-5 flex flex-col justify-between h-full z-10 animate-slide-right text-left">
               <div className="flex flex-col gap-2">
@@ -332,13 +331,13 @@ export default function VendedorPage({ onLogout, onNavigateToCatalog, currentUse
                     </svg>
                   </button>
                 </div>
-                
-                <SidebarContent 
-                  activeTab={activeTab} 
+
+                <SidebarContent
+                  activeTab={activeTab}
                   setActiveTab={(tab) => {
                     setActiveTab(tab);
                     setIsSidebarOpen(false);
-                  }} 
+                  }}
                 />
               </div>
 
@@ -427,6 +426,7 @@ export default function VendedorPage({ onLogout, onNavigateToCatalog, currentUse
                   stats={stats}
                   products={products}
                   categories={categories}
+                  colors={colors}
                   isAdmin={false}
                 />
               )}

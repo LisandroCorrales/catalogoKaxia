@@ -1,9 +1,18 @@
 import React from "react";
+import { analyticsService } from "../services/api.js";
 
 const DEFAULT_PHONE = "5491137639321";
 
 export default function WhatsAppFloatingButton() {
   const phone = import.meta.env.VITE_WHATSAPP_PHONE || DEFAULT_PHONE;
+
+  const handleClick = () => {
+    try {
+      analyticsService.trackConsultationClick();
+    } catch (err) {
+      console.error("Error tracking consultation click:", err);
+    }
+  };
 
   return (
     <div className="fixed bottom-6 right-6 z-40 group flex items-center">
@@ -17,6 +26,7 @@ export default function WhatsAppFloatingButton() {
 
       {/* Botón Circular Verde */}
       <a
+        onClick={handleClick}
         href={`https://wa.me/${phone}?text=Hola!%20Tengo%20una%20consulta%20sobre%20los%20productos%20del%20catálogo.`}
         target="_blank"
         rel="noopener noreferrer"

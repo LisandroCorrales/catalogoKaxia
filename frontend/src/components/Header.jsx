@@ -1,11 +1,20 @@
 import React, { useState } from 'react';
 import logoImg from '../assets/logo.png';
 import isotypeImg from '../assets/isotipo kaxia.png';
+import { analyticsService } from '../services/api.js';
 
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_PHONE || "5491137639321";
 
 export default function Header({ onOpenEditor, onOpenCart, cartItemsCount, currentUser, onBackToPanel }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const handleWholesalerClick = () => {
+    try {
+      analyticsService.trackWholesalerClick();
+    } catch (e) {
+      console.error("Error tracking wholesaler click:", e);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-navy/95 backdrop-blur-md text-white border-b border-white/10">
@@ -75,6 +84,7 @@ export default function Header({ onOpenEditor, onOpenCart, cartItemsCount, curre
 
             {/* Botón PEDIDOS MAYORISTAS (Sólido Acero Claro #CDD8E8) */}
             <a
+              onClick={handleWholesalerClick}
               href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola!%20Quiero%20hacer%20un%20pedido%20mayorista.`}
               target="_blank"
               rel="noopener noreferrer"
@@ -141,7 +151,10 @@ export default function Header({ onOpenEditor, onOpenCart, cartItemsCount, curre
                     href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola!%20Quiero%20hacer%20un%20pedido%20mayorista.`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={() => setIsMenuOpen(false)}
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      handleWholesalerClick();
+                    }}
                     className="mx-3 bg-[#CDD8E8] text-navy font-bold rounded-xl py-2.5 text-xs text-center tracking-wider uppercase hover:bg-[#b9c9df] transition-colors select-none"
                   >
                     Pedidos Mayoristas

@@ -24,6 +24,12 @@ export default function CatalogPage({ onNavigateToLogin, onNavigateToAdmin, curr
   const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Estados de paginación
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const LIMIT = 12;
+
   // Modal de Selección rápida de Talle y Color
   const [quickAddProduct, setQuickAddProduct] = useState(null);
 
@@ -35,9 +41,9 @@ export default function CatalogPage({ onNavigateToLogin, onNavigateToAdmin, curr
     analyticsService.trackSession();
   }, []);
 
+  // Carga de metadatos estáticos (Categorías, Etiquetas, Colores, Anuncios) solo al montar
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
+    const fetchMetadata = async () => {
       try {
         const [catsRes, tagsRes, colorsRes, annonsRes] = await Promise.all([
           categoryService.getAll(),
@@ -49,11 +55,30 @@ export default function CatalogPage({ onNavigateToLogin, onNavigateToAdmin, curr
         setTags(tagsRes);
         setColors(colorsRes);
         setAnnouncements(annonsRes);
+      } catch (err) {
+        console.error("Error al cargar metadatos del catálogo:", err);
+      }
+    };
+    fetchMetadata();
+  }, []);
 
+  // Carga inicial de productos cuando cambian los filtros
+  useEffect(() => {
+    let active = true;
+
+    const fetchInitialProducts = async () => {
+      setLoading(true);
+      setPage(1);
+      setHasMore(true);
+      try {
         const prodsRes = await productService.getAll({
           categoryId: selectedCategory,
-          tagId: selectedTag
+          tagId: selectedTag,
+          page: 1,
+          limit: LIMIT
         });
+
+        if (!active) return;
 
         // Ordenar productos: disponibles primero, sin stock al final
         const sortedProds = [...prodsRes].sort((a, b) => {
@@ -65,21 +90,65 @@ export default function CatalogPage({ onNavigateToLogin, onNavigateToAdmin, curr
         });
 
         setProducts(sortedProds);
+        setHasMore(prodsRes.length === LIMIT);
       } catch (err) {
-        console.error("Error al cargar datos del catálogo:", err);
+        console.error("Error al cargar productos:", err);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
-    fetchData();
+
+    fetchInitialProducts();
+
+    return () => {
+      active = false;
+    };
   }, [selectedCategory, selectedTag]);
+
+  // Carga de la siguiente página de productos al hacer clic en "Cargar más"
+  const handleLoadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    try {
+      const prodsRes = await productService.getAll({
+        categoryId: selectedCategory,
+        tagId: selectedTag,
+        page: nextPage,
+        limit: LIMIT
+      });
+
+      // Ordenar productos: disponibles primero, sin stock al final
+      const sortedProds = [...prodsRes].sort((a, b) => {
+        const aOut = a.stock === "Sin Stock";
+        const bOut = b.stock === "Sin Stock";
+        if (aOut && !bOut) return 1;
+        if (!aOut && bOut) return -1;
+        return 0;
+      });
+
+      setProducts(prev => {
+        // Evitar duplicación por seguridad
+        const existingIds = new Set(prev.map(p => p.id));
+        const filteredNew = sortedProds.filter(p => !existingIds.has(p.id));
+        return [...prev, ...filteredNew];
+      });
+
+      setPage(nextPage);
+      setHasMore(prodsRes.length === LIMIT);
+    } catch (err) {
+      console.error("Error al cargar más productos:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const handleAddToCartClick = (product) => {
     setQuickAddProduct(product);
   };
 
   const handleConfirmQuickAdd = (product, size, color, quantity) => {
-    analyticsService.trackAddToCart(product.id);
+    analyticsService.trackAddToCart(product.id, color.id, size, quantity);
     setCart(prev => {
       const idx = prev.findIndex(item =>
         item.product.id === product.id &&
@@ -255,6 +324,30 @@ export default function CatalogPage({ onNavigateToLogin, onNavigateToAdmin, curr
                 onOpenSizesTable={setSizeTableProduct}
               />
             ))}
+          </div>
+        )}
+
+        {/* Botón Cargar más */}
+        {hasMore && products.length > 0 && (
+          <div className="flex justify-center mt-12 mb-4">
+            <button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className={`px-8 py-3 rounded-full text-xs font-extrabold uppercase tracking-wider cursor-pointer transition-all flex items-center gap-2.5 ${
+                loadingMore
+                  ? "bg-slate-200 text-slate-400 border border-slate-200 cursor-not-allowed"
+                  : "btn-navy border border-navy"
+              }`}
+            >
+              {loadingMore ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                  <span>Cargando...</span>
+                </>
+              ) : (
+                <span>Cargar más productos</span>
+              )}
+            </button>
           </div>
         )}
       </section>

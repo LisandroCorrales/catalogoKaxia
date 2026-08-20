@@ -5,8 +5,8 @@ export class ProductController {
 
   getAll = async (req, res, next) => {
     try {
-      const { categoryId, tagId } = req.query;
-      const products = await this.productService.getProducts({ categoryId, tagId });
+      const { categoryId, tagId, limit, page } = req.query;
+      const products = await this.productService.getProducts({ categoryId, tagId, limit, page });
       res.status(200).json(products);
     } catch (error) {
       next(error);

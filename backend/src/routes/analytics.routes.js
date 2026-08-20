@@ -15,6 +15,8 @@ export const createAnalyticsRouter = (analyticsService) => {
   router.post("/view", controller.trackView);
   router.post("/cart", controller.trackAddToCart);
   router.post("/order", controller.trackOrder);
+  router.post("/consultation", controller.trackConsultationClick);
+  router.post("/wholesaler", controller.trackWholesalerClick);
 
   return router;
 };
