@@ -206,7 +206,10 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
     if (formTags !== prodTags) return true;
 
     const formImages = formData.images.map(img => img.url).sort().join(",");
-    const prodImages = [...(product.images || (product.image ? [product.image] : []))].sort().join(",");
+    const prodImagesArray = product.images && product.images.length > 0 
+      ? product.images 
+      : [product.image, ...(product.gallery || [])].filter(Boolean);
+    const prodImages = [...prodImagesArray].sort().join(",");
     if (formImages !== prodImages) return true;
 
     // Compare measurements
