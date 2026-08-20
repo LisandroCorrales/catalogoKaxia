@@ -1,11 +1,11 @@
 import React from "react";
 import { analyticsService } from "../services/api.js";
+import { WHATSAPP_NUMBER } from "../config/constants.js";
 
 export default function CartDrawer({ isOpen, cartItems = [], onClose, onUpdateQuantity, onRemoveItem, onClearCart }) {
   const total = cartItems.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
 
   const handleCheckout = () => {
-    const WHATSAPP_PHONE = import.meta.env.VITE_WHATSAPP_PHONE || "5491137639321";
 
     let message = "¡Hola KAXIA! Me gustaría realizar un pedido con las siguientes prendas:\n\n";
 
@@ -21,8 +21,10 @@ export default function CartDrawer({ isOpen, cartItems = [], onClose, onUpdateQu
     message += "Quedo a la espera para coordinar el pago y el envío. ¡Muchas gracias!";
 
     analyticsService.trackOrder(cartItems, total);
-    const waUrl = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+    const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
     window.open(waUrl, "_blank");
+    if (onClearCart) onClearCart();
+    if (onClose) onClose();
   };
 
   if (!isOpen) return null;

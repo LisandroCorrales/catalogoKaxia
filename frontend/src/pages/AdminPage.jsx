@@ -24,37 +24,7 @@ import AnnouncementsTab from "../components/dashboard/AnnouncementsTab.jsx";
 import StatsTab from "../components/dashboard/StatsTab.jsx";
 import UsersTab from "../components/dashboard/UsersTab.jsx";
 import AuditLogsTab from "../components/dashboard/AuditLogsTab.jsx";
-
-// Componente helper para no duplicar los botones del Sidebar de Admin
-function SidebarContent({ activeTab, setActiveTab }) {
-  const tabs = [
-    { id: "products", name: "Productos", icon: "👕" },
-    { id: "categories", name: "Categorías", icon: "📁" },
-    { id: "tags", name: "Etiquetas", icon: "🏷️" },
-    { id: "colors", name: "Colores Globales", icon: "🎨" },
-    { id: "settings", name: "Barra de Anuncios", icon: "📢" },
-    { id: "metrics", name: "Estadísticas", icon: "📊" },
-    { id: "users", name: "Usuarios", icon: "👥" },
-    { id: "logs", name: "Auditoría", icon: "📋" }
-  ];
-
-  return (
-    <>
-      {tabs.map(tab => (
-        <button
-          key={tab.id}
-          onClick={() => setActiveTab(tab.id)}
-          className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer border-0 ${activeTab === tab.id
-              ? "bg-slate-700 text-white font-extrabold shadow-lg shadow-black/25 border border-white/5"
-              : "bg-transparent text-slate-400 hover:bg-white/5 hover:text-slate-100"
-            }`}
-        >
-          <span>{tab.icon}</span> <span>{tab.name}</span>
-        </button>
-      ))}
-    </>
-  );
-}
+import SidebarContent from "../components/dashboard/SidebarContent.jsx";
 
 export default function AdminPage({ onLogout, onNavigateToCatalog, currentUser }) {
   const [activeTab, setActiveTab] = useState("products");
@@ -370,7 +340,7 @@ export default function AdminPage({ onLogout, onNavigateToCatalog, currentUser }
       <div className="flex-grow flex flex-col md:flex-row overflow-hidden">
         {/* Sidebar para Escritorio */}
         <aside className="hidden md:flex w-64 bg-[#07090e]/60 border-r border-white/5 p-5 flex-col gap-2 shrink-0">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} isAdmin={true} />
         </aside>
 
         {/* Sidebar para Móvil (Drawer Overlay responsivo) */}
@@ -403,6 +373,7 @@ export default function AdminPage({ onLogout, onNavigateToCatalog, currentUser }
                     setActiveTab(tab);
                     setIsSidebarOpen(false);
                   }}
+                  isAdmin={true}
                 />
               </div>
 

@@ -74,11 +74,10 @@ export default function ProductsTab({
           <button
             type="button"
             onClick={() => setShowFilters(prev => !prev)}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap select-none ${
-              showFilters 
-                ? "bg-[#CDD8E8] text-[#0d1222] border-[#CDD8E8] font-black" 
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap select-none ${showFilters
+                ? "bg-[#CDD8E8] text-[#0d1222] border-[#CDD8E8] font-black"
                 : "bg-white/[0.02] border-white/10 text-slate-300 hover:bg-white/5"
-            }`}
+              }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="w-4 h-4 shrink-0">
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
@@ -196,11 +195,10 @@ export default function ProductsTab({
                     ${prod.price.toLocaleString("es-AR")}
                   </td>
                   <td className="p-4">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                      prod.stock === "Disponible" 
-                        ? "bg-green-500/10 text-green-400 border border-green-500/20" 
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${prod.stock === "Disponible"
+                        ? "bg-green-500/10 text-green-400 border border-green-500/20"
                         : "bg-red-500/10 text-red-400 border border-red-500/20"
-                    }`}>
+                      }`}>
                       {prod.stock}
                     </span>
                   </td>
@@ -251,11 +249,10 @@ export default function ProductsTab({
                     <span className="text-slate-300 font-bold font-mono text-xs">
                       ${prod.price.toLocaleString("es-AR")}
                     </span>
-                    <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-extrabold ${
-                      prod.stock === "Disponible" 
-                        ? "bg-green-500/10 text-green-400 border border-green-500/20" 
+                    <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-extrabold ${prod.stock === "Disponible"
+                        ? "bg-green-500/10 text-green-400 border border-green-500/20"
                         : "bg-red-500/10 text-red-400 border border-red-500/20"
-                    }`}>
+                      }`}>
                       {prod.stock}
                     </span>
                   </div>

@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import logoImg from '../assets/logo.png';
 import isotypeImg from '../assets/isotipo kaxia.png';
 import { analyticsService } from '../services/api.js';
-
-const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_PHONE || "5491137639321";
+import { WHATSAPP_NUMBER } from '../config/constants.js';
 
 export default function Header({ onOpenEditor, onOpenCart, cartItemsCount, currentUser, onBackToPanel }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

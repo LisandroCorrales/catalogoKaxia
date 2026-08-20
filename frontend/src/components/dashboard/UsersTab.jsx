@@ -34,6 +34,10 @@ export default function UsersTab({
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState(""); // "" (Todos) | "Admin" | "Vendedor"
   const [filterStatus, setFilterStatus] = useState("active"); // "active" | "deleted" | "all"
+  
+  // Estados de visibilidad responsive
+  const [showForm, setShowForm] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -229,13 +233,34 @@ export default function UsersTab({
   return (
     <div className="space-y-6 text-left">
       <div className="border-b border-white/5 pb-4">
-        <h2 className="text-xl font-bold text-slate-100 font-sans">Gestionar Cuentas de Usuario</h2>
-        <p className="text-xs text-slate-400 mt-1">Crea, modifica contraseñas o realiza bajas lógicas de Vendedores y Administradores.</p>
+        <div>
+          <h2 className="text-xl font-bold text-slate-100 font-sans">Gestionar Cuentas de Usuario</h2>
+          <p className="text-xs text-slate-400 mt-1">Crea, modifica contraseñas o realiza bajas lógicas de Vendedores y Administradores.</p>
+        </div>
+        <div className="mt-4 flex justify-center w-full lg:hidden">
+          <button
+            onClick={() => {
+              if (showForm) {
+                setNewUser({ username: "", role: "Vendedor" });
+                setCreatePassword("");
+                setCreateDisplayValue("");
+              }
+              setShowForm(!showForm);
+            }}
+            className={`w-full sm:w-auto px-8 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all hover:scale-[1.01] active:scale-95 shadow-md cursor-pointer border-0 select-none ${
+              showForm 
+                ? "bg-[#1f293e] hover:bg-[#28354f] text-slate-300 border border-white/10" 
+                : "bg-slate-700 hover:bg-slate-600 text-white"
+            }`}
+          >
+            {showForm ? "✕ Cerrar Formulario" : "+ Agregar Usuario"}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Formulario de Alta */}
-        <div className="bg-[#0f131c]/30 border border-white/5 p-5 rounded-2xl h-fit">
+        <div className={`bg-[#0f131c]/30 border border-white/5 p-5 rounded-2xl h-fit fade-in ${showForm ? "block" : "hidden lg:block"}`}>
           <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider">Nuevo Usuario</h3>
           <form onSubmit={handleSubmitNewUser} className="space-y-4">
             <div>
@@ -298,57 +323,96 @@ export default function UsersTab({
               </select>
             </div>
 
-            <button
-              type="submit"
-              className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 text-xs rounded-xl font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-95 shadow-md shadow-black/10 cursor-pointer border-0"
-            >
-              Crear Usuario
-            </button>
+            <div className="flex gap-2">
+              {showForm && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewUser({ username: "", role: "Vendedor" });
+                    setCreatePassword("");
+                    setCreateDisplayValue("");
+                    setShowForm(false);
+                  }}
+                  className="w-1/2 bg-white/5 hover:bg-white/10 text-slate-300 py-3 text-xs rounded-xl font-bold uppercase tracking-widest cursor-pointer border-0 transition-colors lg:hidden"
+                >
+                  Cancelar
+                </button>
+              )}
+              <button
+                type="submit"
+                className={`${showForm ? "w-1/2" : "w-full"} bg-slate-700 hover:bg-slate-600 text-white py-3 text-xs rounded-xl font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-95 shadow-md shadow-black/10 cursor-pointer border-0`}
+              >
+                Crear Usuario
+              </button>
+            </div>
           </form>
         </div>
 
         {/* Panel de Tabla y Filtros */}
         <div className="lg:col-span-2 space-y-4">
           
-          {/* Barra de Filtros */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4.5 rounded-xl bg-[#0f131c]/15 border border-white/5 text-left">
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Buscar por usuario</label>
-              <input
-                type="text"
-                placeholder="Ej: vendedor_juan..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500/20 font-medium"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Filtrar por rol</label>
-              <select
-                value={filterRole}
-                onChange={(e) => setFilterRole(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500/20 font-semibold"
+          {/* Barra de Filtros Principal */}
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between select-none">
+            <div className="flex flex-grow gap-2 items-center w-full max-w-xl">
+              <div className="relative flex-grow">
+                <input
+                  type="text"
+                  placeholder="Buscar usuario por nombre..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl pl-9.5 pr-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500/20 font-medium"
+                />
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 select-none">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.608 10.608Z" />
+                </svg>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowFilters(prev => !prev)}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap select-none ${
+                  showFilters 
+                    ? "bg-[#CDD8E8] text-[#0d1222] border-[#CDD8E8] font-black" 
+                    : "bg-white/[0.02] border-white/10 text-slate-300 hover:bg-white/5"
+                }`}
               >
-                <option value="" className="bg-[#0f131c]">Todos los roles</option>
-                <option value="Vendedor" className="bg-[#0f131c]">Vendedor</option>
-                <option value="Admin" className="bg-[#0f131c]">Administrador</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Estado de Cuenta</label>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500/20 font-semibold"
-              >
-                <option value="active" className="bg-[#0f131c]">Activos</option>
-                <option value="deleted" className="bg-[#0f131c]">Eliminados (Baja Lógica)</option>
-                <option value="all" className="bg-[#0f131c]">Todos</option>
-              </select>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="w-4 h-4 shrink-0">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+                </svg>
+                <span>Filtros {showFilters ? "▾" : "▸"}</span>
+              </button>
             </div>
           </div>
+
+          {/* Panel Desplegable de Filtros Avanzados */}
+          {showFilters && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white/[0.02] border border-white/5 p-4.5 rounded-2xl select-none fade-in text-left">
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Filtrar por rol</label>
+                <select
+                  value={filterRole}
+                  onChange={(e) => setFilterRole(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500/20 font-semibold"
+                >
+                  <option value="" className="bg-[#0f131c]">Todos los roles</option>
+                  <option value="Vendedor" className="bg-[#0f131c]">Vendedor</option>
+                  <option value="Admin" className="bg-[#0f131c]">Administrador</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Estado de Cuenta</label>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500/20 font-semibold"
+                >
+                  <option value="active" className="bg-[#0f131c]">Activos</option>
+                  <option value="deleted" className="bg-[#0f131c]">Eliminados (Baja Lógica)</option>
+                  <option value="all" className="bg-[#0f131c]">Todos</option>
+                </select>
+              </div>
+            </div>
+          )}
 
           {/* Tabla de Resultados (Solo en Escritorio) */}
           <div className="hidden md:block overflow-x-auto rounded-xl border border-white/5 bg-[#0f131c]/30">

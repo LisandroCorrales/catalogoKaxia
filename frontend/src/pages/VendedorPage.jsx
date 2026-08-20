@@ -20,35 +20,7 @@ import TagsTab from "../components/dashboard/TagsTab.jsx";
 import ColorsTab from "../components/dashboard/ColorsTab.jsx";
 import AnnouncementsTab from "../components/dashboard/AnnouncementsTab.jsx";
 import StatsTab from "../components/dashboard/StatsTab.jsx";
-
-// Componente helper para no duplicar los botones del Sidebar
-function SidebarContent({ activeTab, setActiveTab }) {
-  const tabs = [
-    { id: "products", name: "Productos", icon: "👕" },
-    { id: "categories", name: "Categorías", icon: "📁" },
-    { id: "tags", name: "Etiquetas", icon: "🏷️" },
-    { id: "colors", name: "Colores Globales", icon: "🎨" },
-    { id: "settings", name: "Barra de Anuncios", icon: "📢" },
-    { id: "metrics", name: "Estadísticas", icon: "📊" }
-  ];
-
-  return (
-    <>
-      {tabs.map(tab => (
-        <button
-          key={tab.id}
-          onClick={() => setActiveTab(tab.id)}
-          className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer border-0 ${activeTab === tab.id
-              ? "bg-[#CDD8E8] text-[#0d1222] font-extrabold shadow-md shadow-[#CDD8E8]/10"
-              : "bg-transparent text-slate-400 hover:bg-[#CDD8E8]/5 hover:text-slate-100"
-            }`}
-        >
-          <span>{tab.icon}</span> <span>{tab.name}</span>
-        </button>
-      ))}
-    </>
-  );
-}
+import SidebarContent from "../components/dashboard/SidebarContent.jsx";
 
 export default function VendedorPage({ onLogout, onNavigateToCatalog, currentUser }) {
   const [activeTab, setActiveTab] = useState("products");

@@ -27,6 +27,10 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("kaxia_token");
+      localStorage.removeItem("kaxia_current_user");
+    }
     const errorMessage = error.response?.data?.message || error.message;
     const customError = new Error(errorMessage);
     customError.status = error.response?.status;
