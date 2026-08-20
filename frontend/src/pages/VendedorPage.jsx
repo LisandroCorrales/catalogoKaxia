@@ -261,7 +261,7 @@ export default function VendedorPage({ onLogout, onNavigateToCatalog, currentUse
       />
 
       {/* Header Fino */}
-      <header className="bg-[#07090e] border-b border-white/5 py-4 px-6 md:px-8 flex items-center justify-between shadow-md select-none">
+      <header className="relative bg-[#07090e] border-b border-white/5 py-4 px-6 md:px-8 flex items-center justify-between shadow-md select-none">
         {/* Lado Izquierdo: Botón Hamburguesa y Logotipo alineados a la izquierda */}
         <div className="flex items-center gap-3">
           {/* Botón hamburguesa (mobile) */}
@@ -275,7 +275,11 @@ export default function VendedorPage({ onLogout, onNavigateToCatalog, currentUse
             </svg>
           </button>
 
-          <img src={logoImg} alt="KAXIA" className="h-8 object-contain" />
+          <img 
+            src={logoImg} 
+            alt="KAXIA" 
+            className="h-8 object-contain max-md:absolute max-md:left-1/2 max-md:-translate-x-1/2 max-md:top-1/2 max-md:-translate-y-1/2" 
+          />
           <span className="w-1.5 h-1.5 rounded-full bg-slate-500 hidden sm:inline" />
           <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500 hidden sm:inline">Panel Vendedor</span>
         </div>

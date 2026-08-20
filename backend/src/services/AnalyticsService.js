@@ -72,7 +72,20 @@ export class AnalyticsService {
       productAdds: stats.productAdds instanceof Map ? Object.fromEntries(stats.productAdds) : stats.productAdds || {},
       productOrders: stats.productOrders instanceof Map ? Object.fromEntries(stats.productOrders) : stats.productOrders || {},
       productColors: formattedColors,
-      productSizes: formattedSizes
+      productSizes: formattedSizes,
+      dailyRecords: (stats.dailyRecords || []).map(d => ({
+        date: d.date,
+        sessions: d.sessions || 0,
+        ordersCount: d.ordersCount || 0,
+        montoTotal: d.montoTotal || 0,
+        consultationClicks: d.consultationClicks || 0,
+        wholesalerClicks: d.wholesalerClicks || 0,
+        productViews: d.productViews instanceof Map ? Object.fromEntries(d.productViews) : d.productViews || {},
+        productAdds: d.productAdds instanceof Map ? Object.fromEntries(d.productAdds) : d.productAdds || {},
+        productOrders: d.productOrders instanceof Map ? Object.fromEntries(d.productOrders) : d.productOrders || {},
+        productColors: d.productColors instanceof Map ? Object.fromEntries(d.productColors) : d.productColors || {},
+        productSizes: d.productSizes instanceof Map ? Object.fromEntries(d.productSizes) : d.productSizes || {}
+      }))
     };
   }
 }

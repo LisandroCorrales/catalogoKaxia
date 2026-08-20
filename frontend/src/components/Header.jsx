@@ -18,8 +18,12 @@ export default function Header({ onOpenEditor, onOpenCart, cartItemsCount, curre
 
   return (
     <header className="sticky top-0 z-50 bg-navy/95 backdrop-blur-md text-white border-b border-white/10">
-      <div className="max-w-[1220px] mx-auto px-6 py-[9px] flex items-center justify-between gap-4 max-sm:px-3.5 max-sm:py-2.5">
-        <a href="#" className="flex items-center gap-2 sm:gap-3 select-none" title="Kaxia Home">
+      <div className="relative max-w-[1220px] mx-auto px-6 py-[9px] flex items-center justify-between gap-4 max-sm:px-3.5 max-sm:py-2.5">
+        <a 
+          href="#" 
+          className="flex items-center gap-2 sm:gap-3 select-none" 
+          title="Kaxia Home"
+        >
           <img src={isotypeImg} alt="Isotipo_kaxia" className="h-[32px] sm:h-[40px] w-auto object-contain mix-blend-screen" />
           <img src={logoImg} alt="Logotipo_kaxia" className="h-[16px] sm:h-[21px] w-auto object-contain mix-blend-screen" />
         </a>

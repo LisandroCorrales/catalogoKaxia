@@ -138,7 +138,7 @@ export default function ProductCard({ product, allColors = [], allTags = [], onA
       </div>
 
       {/* Contenido (Padding adaptativo) */}
-      <div className="p-4 md:p-5 flex-grow flex flex-col justify-between">
+      <div className="p-2.5 md:p-5 flex-grow flex flex-col justify-between">
         {/* Etiquetas (Tags) del producto */}
         {productTags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-2 select-none">
@@ -196,26 +196,26 @@ export default function ProductCard({ product, allColors = [], allTags = [], onA
         )}
 
         {/* Botones de Acción */}
-        <div className="flex flex-col sm:flex-row gap-1.5 pt-1 w-full">
+        <div className="flex flex-row gap-1.5 pt-1 w-full">
           <button
             onClick={() => onOpenSizesTable(product)}
-            className="w-full sm:flex-1 btn-outline-navy py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-wider cursor-pointer text-center"
+            className="flex-1 btn-outline-navy py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider cursor-pointer text-center px-1"
             title="Ver Tabla de Talles"
           >
-            VER TALLES
+            TALLES
           </button>
           {isOutOfStock ? (
             <button
               disabled
-              className="w-full sm:flex-1 bg-slate-200 text-slate-400 py-2.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider cursor-not-allowed text-center border-0"
+              className="flex-1 bg-slate-200 text-slate-400 py-2 rounded-lg text-[9px] font-extrabold uppercase tracking-wider cursor-not-allowed text-center border-0 px-1"
               title="Producto sin stock disponible"
             >
-              SIN STOCK
+              AGOTADO
             </button>
           ) : (
             <button
               onClick={() => onAddToCart(product)}
-              className="w-full sm:flex-1 btn-navy py-2.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider cursor-pointer text-center"
+              className="flex-1 btn-navy py-2 rounded-lg text-[9px] font-extrabold uppercase tracking-wider cursor-pointer text-center px-1"
               title="Añadir al carrito"
             >
               AGREGAR

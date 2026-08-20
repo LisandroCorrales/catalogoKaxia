@@ -8,6 +8,7 @@ export default function CategoriesTab({
 }) {
   const [newCategory, setNewCategory] = useState({ name: "", description: "" });
   const [editingId, setEditingId] = useState(null);
+  const [showForm, setShowForm] = useState(false);
 
   const labelStyles = isAdmin
     ? "text-slate-400"
@@ -35,28 +36,52 @@ export default function CategoriesTab({
     onSaveCategory(newCategory.name.trim(), newCategory.description.trim(), editingId);
     setNewCategory({ name: "", description: "" });
     setEditingId(null);
+    setShowForm(false);
   };
 
   const handleEditClick = (cat) => {
     setEditingId(cat.id);
     setNewCategory({ name: cat.name, description: cat.description || "" });
+    setShowForm(true);
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
     setNewCategory({ name: "", description: "" });
+    setShowForm(false);
   };
 
   return (
     <div className="space-y-6 text-left">
       <div className="border-b border-white/5 pb-4">
-        <h2 className="text-xl font-bold text-slate-100">Administrar Categorías</h2>
-        <p className="text-xs text-slate-400 mt-1">Organiza tus productos en colecciones.</p>
+        <div>
+          <h2 className="text-xl font-bold text-slate-100">Administrar Categorías</h2>
+          <p className="text-xs text-slate-400 mt-1">Organiza tus productos en colecciones.</p>
+        </div>        <div className="mt-4 flex justify-center w-full lg:hidden">
+          <button
+            onClick={() => {
+              if (showForm) {
+                handleCancelEdit();
+              } else {
+                setShowForm(true);
+                setEditingId(null);
+                setNewCategory({ name: "", description: "" });
+              }
+            }}
+            className={`w-full sm:w-auto px-8 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all hover:scale-[1.01] active:scale-95 shadow-md cursor-pointer border-0 select-none ${
+              showForm 
+                ? "bg-[#1f293e] hover:bg-[#28354f] text-slate-300 border border-white/10" 
+                : btnStyles
+            }`}
+          >
+            {showForm ? "✕ Cerrar Formulario" : "+ Agregar Categoría"}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Formulario */}
-        <div className={`${cardBg} border border-white/5 p-5 rounded-2xl h-fit`}>
+        <div className={`${cardBg} border border-white/5 p-5 rounded-2xl h-fit fade-in ${showForm ? "block" : "hidden lg:block"}`}>
           <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider">
             {editingId ? "Editar Categoría" : "Nueva Categoría"}
           </h3>
@@ -83,18 +108,18 @@ export default function CategoriesTab({
               />
             </div>
             <div className="flex gap-2">
-              {editingId && (
+              {(editingId || showForm) && (
                 <button
                   type="button"
                   onClick={handleCancelEdit}
-                  className="w-1/2 bg-white/5 hover:bg-white/10 text-slate-300 py-3 text-xs rounded-xl font-bold uppercase tracking-widest cursor-pointer border-0 transition-colors"
+                  className={`w-1/2 bg-white/5 hover:bg-white/10 text-slate-300 py-3 text-xs rounded-xl font-bold uppercase tracking-widest cursor-pointer border-0 transition-colors ${!editingId ? "lg:hidden" : ""}`}
                 >
                   Cancelar
                 </button>
               )}
               <button
                 type="submit"
-                className={`${editingId ? 'w-1/2' : 'w-full'} ${btnStyles} py-3 text-xs rounded-xl font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-95 shadow-md cursor-pointer border-0`}
+                className={`${(editingId || showForm) ? "w-1/2" : "w-full"} ${btnStyles} py-3 text-xs rounded-xl font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-95 shadow-md cursor-pointer border-0`}
               >
                 {editingId ? "Guardar" : "Agregar Categoría"}
               </button>

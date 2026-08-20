@@ -24,6 +24,7 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [removedImages, setRemovedImages] = useState([]); // Rastrear fotos eliminadas de Cloudinary
+  const [activeTab, setActiveTab] = useState("info"); // "info" | "variants" | "sizes"
 
   const parseMeasurements = (str) => {
     if (!str) return { width: "", length: "" };
@@ -36,6 +37,7 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
   };
 
   useEffect(() => {
+    setActiveTab("info");
     if (product) {
       const initialImages = (product.images && product.images.length > 0 
         ? product.images 
@@ -291,7 +293,7 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
       <div className="fixed inset-0 bg-black/75 backdrop-blur-sm" onClick={handleClose} />
 
       {/* Modal Container */}
-      <div className="flex min-h-screen items-center justify-center p-4">
+      <div className="flex min-h-screen items-start justify-center p-4 pt-10 md:pt-20">
         <div className="relative w-full max-w-3xl bg-[#131926] rounded-2xl p-6 md:p-8 border border-white/10 shadow-2xl z-10 fade-in">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
@@ -311,10 +313,48 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
             </div>
           )}
 
+          {/* Tabs Selector */}
+          <div className="flex border-b border-white/10 mb-6 gap-2 select-none overflow-x-auto scrollbar-none">
+            <button
+              type="button"
+              onClick={() => setActiveTab("info")}
+              className={`pb-2.5 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === "info"
+                  ? "border-[#CDD8E8] text-[#CDD8E8]"
+                  : "border-transparent text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              1. Información Básica
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("variants")}
+              className={`pb-2.5 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === "variants"
+                  ? "border-[#CDD8E8] text-[#CDD8E8]"
+                  : "border-transparent text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              2. Variantes y Fotos
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("sizes")}
+              className={`pb-2.5 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === "sizes"
+                  ? "border-[#CDD8E8] text-[#CDD8E8]"
+                  : "border-transparent text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              3. Medidas por Talle
+            </button>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Columna Izquierda */}
-              <div className="space-y-4">
+            <div className="h-[430px] md:h-[510px] overflow-y-auto pr-1">
+              {/* Tab 1: Información Básica */}
+            {activeTab === "info" && (
+              <div className="space-y-4 fade-in">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Nombre del Producto</label>
                   <input type="text" name="name" value={formData.name} onChange={handleChange} className="input-field focus:border-[#CDD8E8] focus:ring-1 focus:ring-[#CDD8E8]/10" placeholder="Ej: Buzo Oversized Zafiro" />
@@ -356,12 +396,14 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
 
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Descripción / Detalles</label>
-                  <textarea name="details" value={formData.details} onChange={handleChange} rows={3} className="input-field resize-none focus:border-[#CDD8E8]" placeholder="Especificaciones adicionales..." />
+                  <textarea name="details" value={formData.details} onChange={handleChange} rows={4} className="input-field resize-none focus:border-[#CDD8E8]" placeholder="Especificaciones adicionales..." />
                 </div>
               </div>
+            )}
 
-              {/* Columna Derecha */}
-              <div className="space-y-5">
+            {/* Tab 2: Variantes y Fotos */}
+            {activeTab === "variants" && (
+              <div className="space-y-5 fade-in">
                 {/* Carga de Varias Imágenes */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5">
@@ -382,7 +424,7 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
                   
                   {/* Grid de miniaturas */}
                   {formData.images.length > 0 && (
-                    <div className="mt-3 grid grid-cols-4 gap-2.5 p-3 bg-slate-950/40 rounded-xl border border-white/5 max-h-40 overflow-y-auto">
+                    <div className="mt-3 grid grid-cols-4 gap-2.5 p-3 bg-slate-950/40 rounded-xl border border-white/5 max-h-40 overflow-y-auto font-sans">
                       {formData.images.map((imgObj, idx) => (
                         <div key={idx} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-white/10 group bg-slate-900">
                           <img src={imgObj.url} alt={`Vista ${idx}`} className="w-full h-full object-cover" />
@@ -414,7 +456,7 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
                 {/* Colores */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Colores del Producto</label>
-                  <div className="flex flex-wrap gap-3 p-3 bg-slate-950/40 rounded-xl border border-white/5 max-h-32 overflow-y-auto">
+                  <div className="flex flex-wrap gap-2.5 p-3 bg-slate-950/40 rounded-xl border border-white/5 max-h-32 overflow-y-auto">
                     {colors.map(color => {
                       const isChecked = formData.colors.includes(color.id);
                       return (
@@ -466,50 +508,57 @@ export default function ProductForm({ isOpen, product = null, categories = [], c
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Medidas por talle */}
-            {formData.sizes.length > 0 && (
-              <div className="border-t border-white/10 pt-4 text-left">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+            {/* Tab 3: Medidas por Talle */}
+            {activeTab === "sizes" && (
+              <div className="space-y-4 fade-in text-left">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
                   Medidas de Talle (Ingresar valores numéricos en cm)
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {formData.sizes.map(size => {
-                    const specs = sizeSpecs[size] || { width: "", length: "" };
-                    return (
-                      <div key={size} className="p-3 bg-[#182032]/30 border border-white/5 rounded-xl space-y-2">
-                        <div className="font-mono text-xs font-extrabold text-[#CDD8E8] border-b border-white/5 pb-1">
-                          Talle {size}
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="block text-[9px] uppercase font-bold text-slate-500 mb-1">Ancho (cm)</label>
-                            <input
-                              type="number"
-                              value={specs.width}
-                              onChange={(e) => handleSpecChange(size, "width", e.target.value)}
-                              className="w-full bg-[#182032] border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[#CDD8E8] focus:ring-1 focus:ring-[#CDD8E8]/10 font-mono transition-colors"
-                              placeholder="Ej: 58"
-                            />
+                {formData.sizes.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 italic bg-slate-950/30 border border-dashed border-white/5 rounded-xl">
+                    Por favor, selecciona primero los talles disponibles en la pestaña "2. Variantes y Fotos".
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {formData.sizes.map(size => {
+                      const specs = sizeSpecs[size] || { width: "", length: "" };
+                      return (
+                        <div key={size} className="p-3 bg-[#182032]/30 border border-white/5 rounded-xl space-y-2">
+                          <div className="font-mono text-xs font-extrabold text-[#CDD8E8] border-b border-white/5 pb-1">
+                            Talle {size}
                           </div>
-                          <div>
-                            <label className="block text-[9px] uppercase font-bold text-slate-500 mb-1">Largo (cm)</label>
-                            <input
-                              type="number"
-                              value={specs.length}
-                              onChange={(e) => handleSpecChange(size, "length", e.target.value)}
-                              className="w-full bg-[#182032] border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[#CDD8E8] focus:ring-1 focus:ring-[#CDD8E8]/10 font-mono transition-colors"
-                              placeholder="Ej: 70"
-                            />
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[9px] uppercase font-bold text-slate-500 mb-1">Ancho (cm)</label>
+                              <input
+                                type="number"
+                                value={specs.width}
+                                onChange={(e) => handleSpecChange(size, "width", e.target.value)}
+                                className="w-full bg-[#182032] border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[#CDD8E8] focus:ring-1 focus:ring-[#CDD8E8]/10 font-mono transition-colors"
+                                placeholder="Ej: 58"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] uppercase font-bold text-slate-500 mb-1">Largo (cm)</label>
+                              <input
+                                type="number"
+                                value={specs.length}
+                                onChange={(e) => handleSpecChange(size, "length", e.target.value)}
+                                className="w-full bg-[#182032] border border-white/15 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[#CDD8E8] focus:ring-1 focus:ring-[#CDD8E8]/10 font-mono transition-colors"
+                                placeholder="Ej: 70"
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
+            </div>
 
             {/* Footer de Acciones */}
             <div className="flex justify-end gap-3 border-t border-white/10 pt-5">

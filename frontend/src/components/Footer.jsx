@@ -64,7 +64,7 @@ export default function Footer({ categories = [], onCategorySelect }) {
                 <img src={logoImg} alt="KAXIA" className="h-7 w-auto object-contain mix-blend-screen" />
               </div>
               <p className="text-slate-400 text-xs leading-relaxed max-w-sm">
-                Marca de indumentaria masculina. Prendas con identidad, calidad y estilo. Diseñadas para durar.
+                Marca de indumentaria informal urbana masculina. Prendas con identidad, calidad y estilo.
               </p>
             </div>
             

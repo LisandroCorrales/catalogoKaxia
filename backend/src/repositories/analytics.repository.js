@@ -188,11 +188,14 @@ export class AnalyticsRepository {
         productAdds: new Map(),
         productOrders: new Map(),
         productColors: new Map(),
-        productSizes: new Map()
+        productSizes: new Map(),
+        dailyRecords: []
       };
     }
 
-    return consolidateDocs(docs);
+    const consolidated = consolidateDocs(docs);
+    consolidated.dailyRecords = docs;
+    return consolidated;
   }
 
   async trackSession() {

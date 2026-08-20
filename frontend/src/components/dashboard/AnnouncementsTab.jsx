@@ -157,7 +157,7 @@ export default function AnnouncementsTab({
           </div>
 
           {/* Añadir anuncio nuevo */}
-          <form onSubmit={handleAddAnnouncement} className="flex gap-2">
+          <form onSubmit={handleAddAnnouncement} className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={newAnnouncement}
@@ -167,7 +167,7 @@ export default function AnnouncementsTab({
             />
             <button
               type="submit"
-              className={`${btnStyles} px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer transition-all shrink-0 border-0 hover:scale-[1.01] active:scale-95 shadow-md`}
+              className={`w-full sm:w-auto ${btnStyles} px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer transition-all shrink-0 border-0 hover:scale-[1.01] active:scale-95 shadow-md`}
             >
               Añadir y Guardar
             </button>

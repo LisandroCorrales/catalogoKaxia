@@ -8,6 +8,7 @@ export default function ColorsTab({
 }) {
   const [newColor, setNewColor] = useState({ name: "", hexCode: "#000000" });
   const [editingId, setEditingId] = useState(null);
+  const [showForm, setShowForm] = useState(false);
 
   const labelStyles = isAdmin
     ? "text-slate-400"
@@ -35,28 +36,53 @@ export default function ColorsTab({
     onSaveColor(newColor.name.trim(), newColor.hexCode, editingId);
     setNewColor({ name: "", hexCode: "#000000" });
     setEditingId(null);
+    setShowForm(false);
   };
 
   const handleEditClick = (color) => {
     setEditingId(color.id);
     setNewColor({ name: color.name, hexCode: color.hexCode });
+    setShowForm(true);
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
     setNewColor({ name: "", hexCode: "#000000" });
+    setShowForm(false);
   };
 
   return (
     <div className="space-y-6 text-left">
       <div className="border-b border-white/5 pb-4">
-        <h2 className="text-xl font-bold text-slate-100">Administrar Colores Globales</h2>
-        <p className="text-xs text-slate-400 mt-1">Configura la paleta de colores utilizables en las prendas.</p>
+        <div>
+          <h2 className="text-xl font-bold text-slate-100">Administrar Colores Globales</h2>
+          <p className="text-xs text-slate-400 mt-1">Configura la paleta de colores utilizables en las prendas.</p>
+        </div>
+        <div className="mt-4 flex justify-center w-full lg:hidden">
+          <button
+            onClick={() => {
+              if (showForm) {
+                handleCancelEdit();
+              } else {
+                setShowForm(true);
+                setEditingId(null);
+                setNewColor({ name: "", hexCode: "#000000" });
+              }
+            }}
+            className={`w-full sm:w-auto px-8 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all hover:scale-[1.01] active:scale-95 shadow-md cursor-pointer border-0 select-none ${
+              showForm 
+                ? "bg-[#1f293e] hover:bg-[#28354f] text-slate-300 border border-white/10" 
+                : btnStyles
+            }`}
+          >
+            {showForm ? "✕ Cerrar Formulario" : "+ Agregar Color"}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Formulario */}
-        <div className={`${cardBg} border border-white/5 p-5 rounded-2xl h-fit`}>
+        <div className={`${cardBg} border border-white/5 p-5 rounded-2xl h-fit fade-in ${showForm ? "block" : "hidden lg:block"}`}>
           <h3 className="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider">
             {editingId ? "Editar Color" : "Nuevo Color"}
           </h3>
@@ -90,18 +116,18 @@ export default function ColorsTab({
               </div>
             </div>
             <div className="flex gap-2">
-              {editingId && (
+              {(editingId || showForm) && (
                 <button
                   type="button"
                   onClick={handleCancelEdit}
-                  className="w-1/2 bg-white/5 hover:bg-white/10 text-slate-300 py-3 text-xs rounded-xl font-bold uppercase tracking-widest cursor-pointer border-0 transition-colors"
+                  className={`w-1/2 bg-white/5 hover:bg-white/10 text-slate-300 py-3 text-xs rounded-xl font-bold uppercase tracking-widest cursor-pointer border-0 transition-colors ${!editingId ? "lg:hidden" : ""}`}
                 >
                   Cancelar
                 </button>
               )}
               <button
                 type="submit"
-                className={`${editingId ? 'w-1/2' : 'w-full'} ${btnStyles} py-3 text-xs rounded-xl font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-95 shadow-md cursor-pointer border-0`}
+                className={`${(editingId || showForm) ? "w-1/2" : "w-full"} ${btnStyles} py-3 text-xs rounded-xl font-black uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-95 shadow-md cursor-pointer border-0`}
               >
                 {editingId ? "Guardar" : "Agregar Color"}
               </button>
@@ -110,14 +136,14 @@ export default function ColorsTab({
         </div>
 
         {/* Lista */}
-        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="lg:col-span-2 grid grid-cols-2 lg:grid-cols-3 gap-2.5 items-start">
           {colors.length === 0 ? (
             <div className="col-span-full p-8 text-center text-slate-500 italic bg-white/[0.01] border border-dashed border-white/5 rounded-xl">
               No hay colores registrados.
             </div>
           ) : (
             colors.map(color => (
-              <div key={color.id} className={`p-4 rounded-xl border border-white/5 ${listItemBg} flex flex-col justify-between gap-3`}>
+              <div key={color.id} className={`p-3 md:p-4 rounded-xl border border-white/5 ${listItemBg} flex flex-col justify-between gap-3`}>
                 <div className="flex items-center gap-2.5">
                   <span className="w-5 h-5 rounded-full border border-white/10 shadow-sm shrink-0" style={{ backgroundColor: color.hexCode }} />
                   <div>

@@ -18,51 +18,110 @@ export default function StatsTab({
 
   if (!stats) return null;
 
-  // Función para obtener el factor de escala determinista y dinámico según el período elegido
-  const getFactor = () => {
-    if (periodType === "today") return 0.04; // 1 día representa aprox 4% de los datos históricos
-    if (periodType === "this_week") return 0.25; // 1 semana representa el 25%
-    if (periodType === "all") return 1.0; // Fallback histórico
-    
-    // Si es un período específico ("custom"):
-    let base = customType === "mes" ? 0.8 : 0.2;
-    
-    // Multiplicador de estacionalidad según el mes
-    const monthInt = parseInt(selectedMonth);
-    let monthMult = 1.0;
-    if (monthInt === 12) monthMult = 1.4; // Diciembre: pico de ventas por fiestas
-    else if (monthInt === 11) monthMult = 1.25; // Noviembre: aumento pre-fiestas
-    else if (monthInt === 6 || monthInt === 7) monthMult = 0.85; // Invierno: ventas más bajas
-    
-    // Multiplicador según el año
-    let yearMult = selectedYear === "2026" ? 1.0 : 0.75; // 2025 tuvo un volumen menor de visitas
-    
-    // Multiplicador por semana del mes
-    let weekMult = 1.0;
-    if (customType === "semana") {
-      const wk = parseInt(selectedWeek);
-      if (wk === 1) weekMult = 0.85; // Comienzo de mes
-      if (wk === 4) weekMult = 1.25; // Fin de mes: pico por cobro de sueldos
-    }
-    
-    return base * monthMult * yearMult * weekMult;
+  // Obtener fecha de hoy en formato YYYY-MM-DD (UTC)
+  const getTodayStr = () => new Date().toISOString().split("T")[0];
+
+  // Obtener fecha límite de hace 7 días (UTC)
+  const getSevenDaysAgoStr = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return d.toISOString().split("T")[0];
   };
 
-  const factor = getFactor();
+  const getFilteredRecords = () => {
+    const records = stats.dailyRecords || [];
+    if (periodType === "today") {
+      const today = getTodayStr();
+      return records.filter(r => r.date === today);
+    }
+    if (periodType === "this_week") {
+      const limit = getSevenDaysAgoStr();
+      return records.filter(r => r.date >= limit);
+    }
+    if (periodType === "custom") {
+      const prefix = `${selectedYear}-${selectedMonth}`;
+      const monthlyRecords = records.filter(r => r.date && r.date.startsWith(prefix));
+      if (customType === "mes") {
+        return monthlyRecords;
+      }
+      if (customType === "semana") {
+        const wk = parseInt(selectedWeek) || 1;
+        const startDay = (wk - 1) * 7 + 1;
+        const endDay = wk === 5 ? 31 : wk * 7;
+        return monthlyRecords.filter(r => {
+          if (!r.date) return false;
+          const day = parseInt(r.date.split("-")[2]) || 1;
+          return day >= startDay && day <= endDay;
+        });
+      }
+    }
+    return records;
+  };
 
-  // Cálculo de métricas principales escaladas por el período
-  const sessions = Math.round((stats.sessions || 0) * factor);
-  const ordersCount = Math.round((stats.ordersCount || 0) * factor);
-  const montoTotal = Math.round((stats.montoTotal || 0) * factor);
+  const filteredRecords = getFilteredRecords();
 
-  // Clics en consultas y clics en mayoristas reales
-  const baseConsultations = stats.consultationClicks || 0;
-  const consultationClicks = Math.round(baseConsultations * factor);
+  // Consolidar métricas dinámicamente de los registros filtrados
+  const aggregatedStats = filteredRecords.reduce((acc, curr) => {
+    acc.sessions += curr.sessions || 0;
+    acc.ordersCount += curr.ordersCount || 0;
+    acc.montoTotal += curr.montoTotal || 0;
+    acc.consultationClicks += curr.consultationClicks || 0;
+    acc.wholesalerClicks += curr.wholesalerClicks || 0;
 
-  const baseWholesalers = stats.wholesalerClicks || 0;
-  const wholesalerClicks = Math.round(baseWholesalers * factor);
+    // Consolidar mapas de productos
+    if (curr.productViews) {
+      for (const [pid, qty] of Object.entries(curr.productViews)) {
+        acc.productViews[pid] = (acc.productViews[pid] || 0) + qty;
+      }
+    }
+    if (curr.productAdds) {
+      for (const [pid, qty] of Object.entries(curr.productAdds)) {
+        acc.productAdds[pid] = (acc.productAdds[pid] || 0) + qty;
+      }
+    }
+    if (curr.productOrders) {
+      for (const [pid, qty] of Object.entries(curr.productOrders)) {
+        acc.productOrders[pid] = (acc.productOrders[pid] || 0) + qty;
+      }
+    }
+    if (curr.productColors) {
+      for (const [pid, colors] of Object.entries(curr.productColors)) {
+        if (!acc.productColors[pid]) acc.productColors[pid] = {};
+        for (const [cid, qty] of Object.entries(colors)) {
+          acc.productColors[pid][cid] = (acc.productColors[pid][cid] || 0) + qty;
+        }
+      }
+    }
+    if (curr.productSizes) {
+      for (const [pid, sizes] of Object.entries(curr.productSizes)) {
+        if (!acc.productSizes[pid]) acc.productSizes[pid] = {};
+        for (const [sz, qty] of Object.entries(sizes)) {
+          acc.productSizes[pid][sz] = (acc.productSizes[pid][sz] || 0) + qty;
+        }
+      }
+    }
 
-  // Cantidad de productos sin stock (no escalable, es el estado real actual)
+    return acc;
+  }, {
+    sessions: 0,
+    ordersCount: 0,
+    montoTotal: 0,
+    consultationClicks: 0,
+    wholesalerClicks: 0,
+    productViews: {},
+    productAdds: {},
+    productOrders: {},
+    productColors: {},
+    productSizes: {}
+  });
+
+  const sessions = aggregatedStats.sessions;
+  const ordersCount = aggregatedStats.ordersCount;
+  const montoTotal = aggregatedStats.montoTotal;
+  const consultationClicks = aggregatedStats.consultationClicks;
+  const wholesalerClicks = aggregatedStats.wholesalerClicks;
+
+  // Cantidad de productos sin stock (no acumulable, es el estado real actual del catálogo)
   const outOfStockCount = products.filter(p => p.stock === "Sin Stock" || p.stock === 0 || p.stock === "0").length;
 
   const cardBg = isAdmin
@@ -115,11 +174,11 @@ export default function StatsTab({
         </div>
 
         {/* Controles del Selector de Períodos */}
-        <div className="flex flex-wrap items-center gap-3 text-left">
-          <div className="flex bg-[#0f131c]/60 p-1 rounded-xl border border-white/5 select-none">
+        <div className="flex flex-col sm:flex-row items-center gap-3 text-left w-full sm:w-auto">
+          <div className="flex bg-[#0f131c]/60 p-1 rounded-xl border border-white/5 select-none w-full sm:w-auto justify-center">
             <button
               onClick={() => setPeriodType("today")}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer border-0 ${
+              className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer border-0 ${
                 periodType === "today"
                   ? "bg-[#CDD8E8] text-[#0d1222] font-extrabold"
                   : "text-slate-400 hover:text-slate-200 bg-transparent"
@@ -129,7 +188,7 @@ export default function StatsTab({
             </button>
             <button
               onClick={() => setPeriodType("this_week")}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer border-0 ${
+              className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer border-0 ${
                 periodType === "this_week"
                   ? "bg-[#CDD8E8] text-[#0d1222] font-extrabold"
                   : "text-slate-400 hover:text-slate-200 bg-transparent"
@@ -139,7 +198,7 @@ export default function StatsTab({
             </button>
             <button
               onClick={() => setPeriodType("custom")}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer border-0 ${
+              className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer border-0 ${
                 periodType === "custom"
                   ? "bg-[#CDD8E8] text-[#0d1222] font-extrabold"
                   : "text-slate-400 hover:text-slate-200 bg-transparent"
@@ -214,77 +273,77 @@ export default function StatsTab({
       </div>
 
       {/* Tarjetas superiores de conversión macro (6 tarjetas) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 select-none">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 select-none">
         
         {/* 1. Visitas a la página */}
-        <div className={`${cardBg} border rounded-2xl p-4 flex flex-col justify-between shadow-lg shadow-black/10 min-h-[140px] text-left relative group`}>
+        <div className={`${cardBg} border rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col justify-between shadow-lg shadow-black/10 min-h-[75px] sm:min-h-[140px] text-left relative group`}>
           <div className="flex justify-between items-start">
-            <span className={`text-[9px] uppercase font-bold tracking-widest ${textLabel}`}>Visitas</span>
-            <span className={`text-lg ${iconBg} p-1.5 rounded-lg`}>🌐</span>
+            <span className={`text-[8px] sm:text-[9px] uppercase font-bold tracking-widest ${textLabel}`}>Visitas</span>
+            <span className={`text-xs sm:text-lg ${iconBg} p-0.5 sm:p-1.5 rounded-lg`}>🌐</span>
           </div>
-          <div className="mt-2">
-            <h3 className="text-2xl font-black text-slate-100">{sessions.toLocaleString("es-AR")}</h3>
-            <p className="text-[9.5px] text-slate-400 mt-1 leading-normal">Sesiones totales del sitio web en este período.</p>
+          <div className="mt-1 sm:mt-2">
+            <h3 className="text-base sm:text-2xl font-black text-slate-100">{sessions.toLocaleString("es-AR")}</h3>
+            <p className="text-[9.5px] text-slate-400 mt-1 leading-normal hidden sm:block">Sesiones totales del sitio web en este período.</p>
           </div>
         </div>
 
         {/* 2. Clics en Consultas */}
-        <div className={`${cardBg} border rounded-2xl p-4 flex flex-col justify-between shadow-lg shadow-black/10 min-h-[140px] text-left relative group`}>
+        <div className={`${cardBg} border rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col justify-between shadow-lg shadow-black/10 min-h-[75px] sm:min-h-[140px] text-left relative group`}>
           <div className="flex justify-between items-start">
-            <span className={`text-[9px] uppercase font-bold tracking-widest ${textLabel}`}>Consultas WA</span>
-            <span className={`text-lg bg-green-500/10 p-1.5 rounded-lg`}>📱</span>
+            <span className={`text-[8px] sm:text-[9px] uppercase font-bold tracking-widest ${textLabel}`}>Consultas WA</span>
+            <span className={`text-xs sm:text-lg bg-green-500/10 p-0.5 sm:p-1.5 rounded-lg`}>📱</span>
           </div>
-          <div className="mt-2">
-            <h3 className="text-2xl font-black text-slate-100">{consultationClicks.toLocaleString("es-AR")}</h3>
-            <p className="text-[9.5px] text-slate-400 mt-1 leading-normal">Clics en botón flotante y botón del pie de página.</p>
+          <div className="mt-1 sm:mt-2">
+            <h3 className="text-base sm:text-2xl font-black text-slate-100">{consultationClicks.toLocaleString("es-AR")}</h3>
+            <p className="text-[9.5px] text-slate-400 mt-1 leading-normal hidden sm:block">Clics en botón flotante y botón del pie de página.</p>
           </div>
         </div>
 
         {/* 3. Clics Mayoristas */}
-        <div className={`${cardBg} border rounded-2xl p-4 flex flex-col justify-between shadow-lg shadow-black/10 min-h-[140px] text-left relative group`}>
+        <div className={`${cardBg} border rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col justify-between shadow-lg shadow-black/10 min-h-[75px] sm:min-h-[140px] text-left relative group`}>
           <div className="flex justify-between items-start">
-            <span className={`text-[9px] uppercase font-bold tracking-widest ${textLabel}`}>Pedidos Mayoristas</span>
-            <span className={`text-lg bg-yellow-500/10 p-1.5 rounded-lg`}>🤝</span>
+            <span className={`text-[8px] sm:text-[9px] uppercase font-bold tracking-widest ${textLabel}`}>Pedidos Mayoristas</span>
+            <span className={`text-xs sm:text-lg bg-yellow-500/10 p-0.5 sm:p-1.5 rounded-lg`}>🤝</span>
           </div>
-          <div className="mt-2">
-            <h3 className="text-2xl font-black text-slate-100">{wholesalerClicks.toLocaleString("es-AR")}</h3>
-            <p className="text-[9.5px] text-slate-400 mt-1 leading-normal">Clics en botón "Pedidos Mayoristas" de la web.</p>
+          <div className="mt-1 sm:mt-2">
+            <h3 className="text-base sm:text-2xl font-black text-slate-100">{wholesalerClicks.toLocaleString("es-AR")}</h3>
+            <p className="text-[9.5px] text-slate-400 mt-1 leading-normal hidden sm:block">Clics en botón "Pedidos Mayoristas" de la web.</p>
           </div>
         </div>
 
         {/* 4. Confirmar por WhatsApp (Carrito) */}
-        <div className={`${cardBg} border rounded-2xl p-4 flex flex-col justify-between shadow-lg shadow-black/10 min-h-[140px] text-left relative group`}>
+        <div className={`${cardBg} border rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col justify-between shadow-lg shadow-black/10 min-h-[75px] sm:min-h-[140px] text-left relative group`}>
           <div className="flex justify-between items-start">
-            <span className={`text-[9px] uppercase font-bold tracking-widest ${textLabel}`}>Pedidos Carrito</span>
-            <span className={`text-lg bg-blue-500/10 p-1.5 rounded-lg`}>🛒</span>
+            <span className={`text-[8px] sm:text-[9px] uppercase font-bold tracking-widest ${textLabel}`}>Pedidos Carrito</span>
+            <span className={`text-xs sm:text-lg bg-blue-500/10 p-0.5 sm:p-1.5 rounded-lg`}>🛒</span>
           </div>
-          <div className="mt-2">
-            <h3 className="text-2xl font-black text-slate-100">{ordersCount.toLocaleString("es-AR")}</h3>
-            <p className="text-[9.5px] text-slate-400 mt-1 leading-normal">Clics en "Confirmar por WhatsApp" del carrito.</p>
+          <div className="mt-1 sm:mt-2">
+            <h3 className="text-base sm:text-2xl font-black text-slate-100">{ordersCount.toLocaleString("es-AR")}</h3>
+            <p className="text-[9.5px] text-slate-400 mt-1 leading-normal hidden sm:block">Clics en "Confirmar por WhatsApp" del carrito.</p>
           </div>
         </div>
 
         {/* 5. Monto Total Confirmado */}
-        <div className={`${cardBg} border rounded-2xl p-4 flex flex-col justify-between shadow-lg shadow-black/10 min-h-[140px] text-left relative group`}>
+        <div className={`${cardBg} border rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col justify-between shadow-lg shadow-black/10 min-h-[75px] sm:min-h-[140px] text-left relative group`}>
           <div className="flex justify-between items-start">
-            <span className={`text-[9px] uppercase font-bold tracking-widest ${textLabel}`}>Monto Potencial</span>
-            <span className="text-lg bg-emerald-500/10 p-1.5 rounded-lg">💰</span>
+            <span className={`text-[8px] sm:text-[9px] uppercase font-bold tracking-widest ${textLabel}`}>Monto Potencial</span>
+            <span className="text-xs sm:text-lg bg-emerald-500/10 p-0.5 sm:p-1.5 rounded-lg">💰</span>
           </div>
-          <div className="mt-2">
-            <h3 className="text-2xl font-black text-slate-100">${montoTotal.toLocaleString("es-AR")}</h3>
-            <p className="text-[9.5px] text-slate-400 mt-1 leading-normal">Suma de importes de carritos enviados a WhatsApp.</p>
+          <div className="mt-1 sm:mt-2">
+            <h3 className="text-base sm:text-2xl font-black text-slate-100">${montoTotal.toLocaleString("es-AR")}</h3>
+            <p className="text-[9.5px] text-slate-400 mt-1 leading-normal hidden sm:block">Suma de importes de carritos enviados a WhatsApp.</p>
           </div>
         </div>
 
         {/* 6. Cantidad de Productos Sin Stock */}
-        <div className={`${cardBg} border rounded-2xl p-4 flex flex-col justify-between shadow-lg shadow-black/10 min-h-[140px] text-left relative group`}>
+        <div className={`${cardBg} border rounded-xl sm:rounded-2xl p-2.5 sm:p-4 flex flex-col justify-between shadow-lg shadow-black/10 min-h-[75px] sm:min-h-[140px] text-left relative group`}>
           <div className="flex justify-between items-start">
-            <span className={`text-[9px] uppercase font-bold tracking-widest ${textLabel}`}>Prendas sin Stock</span>
-            <span className="text-lg bg-red-500/10 p-1.5 rounded-lg">⚠️</span>
+            <span className={`text-[8px] sm:text-[9px] uppercase font-bold tracking-widest ${textLabel}`}>Prendas sin Stock</span>
+            <span className="text-xs sm:text-lg bg-red-500/10 p-0.5 sm:p-1.5 rounded-lg">⚠️</span>
           </div>
-          <div className="mt-2">
-            <h3 className="text-2xl font-black text-slate-100">{outOfStockCount}</h3>
-            <p className="text-[9.5px] text-slate-400 mt-1 leading-normal">Prendas del catálogo actualmente con stock agotado.</p>
+          <div className="mt-1 sm:mt-2">
+            <h3 className="text-base sm:text-2xl font-black text-slate-100">{outOfStockCount}</h3>
+            <p className="text-[9.5px] text-slate-400 mt-1 leading-normal hidden sm:block">Prendas del catálogo actualmente con stock agotado.</p>
           </div>
         </div>
 
@@ -313,13 +372,9 @@ export default function StatsTab({
               <tbody>
                 {products
                   .map(prod => {
-                    const rawOrders = stats.productOrders?.[prod.id] || 0;
-                    const rawAdds = stats.productAdds?.[prod.id] || 0;
-                    const rawViews = stats.productViews?.[prod.id] || 0;
-                    
-                    const orders = Math.round(rawOrders * factor);
-                    const adds = Math.round(rawAdds * factor);
-                    const views = Math.round(rawViews * factor);
+                    const orders = aggregatedStats.productOrders?.[prod.id] || 0;
+                    const adds = aggregatedStats.productAdds?.[prod.id] || 0;
+                    const views = aggregatedStats.productViews?.[prod.id] || 0;
 
                     return { prod, orders, adds, views };
                   })
@@ -366,13 +421,9 @@ export default function StatsTab({
               <tbody>
                 {products
                   .map(prod => {
-                    const rawOrders = stats.productOrders?.[prod.id] || 0;
-                    const rawAdds = stats.productAdds?.[prod.id] || 0;
-                    const rawViews = stats.productViews?.[prod.id] || 0;
-                    
-                    const orders = Math.round(rawOrders * factor);
-                    const adds = Math.round(rawAdds * factor);
-                    const views = Math.round(rawViews * factor);
+                    const orders = aggregatedStats.productOrders?.[prod.id] || 0;
+                    const adds = aggregatedStats.productAdds?.[prod.id] || 0;
+                    const views = aggregatedStats.productViews?.[prod.id] || 0;
 
                     return { prod, orders, adds, views };
                   })
@@ -431,14 +482,14 @@ export default function StatsTab({
               const prod = products.find(p => p.id === selectedStatProduct);
               if (!prod) return null;
 
-              const views = Math.round((stats.productViews?.[prod.id] || 0) * factor);
-              const adds = Math.round((stats.productAdds?.[prod.id] || 0) * factor);
-              const orders = Math.round((stats.productOrders?.[prod.id] || 0) * factor);
+              const views = aggregatedStats.productViews?.[prod.id] || 0;
+              const adds = aggregatedStats.productAdds?.[prod.id] || 0;
+              const orders = aggregatedStats.productOrders?.[prod.id] || 0;
               const interestRatio = views > 0 ? ((adds / views) * 100).toFixed(1) : "0.0";
 
               // Talles más elegidos usando datos reales de la base de datos
               const sizesDistribution = prod.sizes.map((size) => {
-                const qty = Math.round((stats.productSizes?.[prod.id]?.[size] || 0) * factor);
+                const qty = aggregatedStats.productSizes?.[prod.id]?.[size] || 0;
                 return { name: size, qty };
               }).sort((a, b) => b.qty - a.qty);
 
@@ -446,7 +497,7 @@ export default function StatsTab({
               const colorsDistribution = prod.colors.map((colId) => {
                 const colorObj = colors.find(c => c.id === colId);
                 const colorName = colorObj ? colorObj.name : colId;
-                const qty = Math.round((stats.productColors?.[prod.id]?.[colId] || 0) * factor);
+                const qty = aggregatedStats.productColors?.[prod.id]?.[colId] || 0;
                 return { name: colorName, qty };
               }).sort((a, b) => b.qty - a.qty);
 
